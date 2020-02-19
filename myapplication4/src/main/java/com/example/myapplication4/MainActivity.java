@@ -1,7 +1,5 @@
 package com.example.myapplication4;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -11,25 +9,30 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
-    String[] name = { "Иван", "Марья", "Петр", "Антон", "Даша", "Борис",
-            "Костя", "Игорь" };
-    String[] position = { "Программер", "Бухгалтер", "Программер",
-            "Программер", "Бухгалтер", "Директор", "Программер", "Охранник" };
-    int salary[] = { 13000, 10000, 13000, 13000, 10000, 15000, 13000, 8000 };
+    String[] name = {"Иван", "Марья", "Петр", "Антон", "Даша", "Борис",
+            "Костя", "Игорь"};
+    String[] position = {"Программер", "Бухгалтер", "Программер",
+            "Программер", "Бухгалтер", "Директор", "Программер", "Охранник"};
+    int salary[] = {13000, 10000, 13000, 13000, 10000, 15000, 13000, 8000};
 
     int[] colors = new int[2];
 
     TextView tv;
     MyTask mt;
-
+    LinearLayout linLayout;
+    LayoutInflater ltInflater;
+    View.OnClickListener oclBtnOk;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,11 +41,11 @@ public class MainActivity extends AppCompatActivity {
         colors[0] = Color.parseColor("#559966CC");
         colors[1] = Color.parseColor("#55336699");
 
-        LinearLayout linLayout = (LinearLayout) findViewById(R.id.linLayout);
+        linLayout = (LinearLayout) findViewById(R.id.linLayout);
 
-        LayoutInflater ltInflater = getLayoutInflater();
+        ltInflater = getLayoutInflater();
 
-        View.OnClickListener oclBtnOk = new View.OnClickListener() {
+        oclBtnOk = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // TODO Auto-generated method stub
@@ -51,8 +54,16 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        fill(ltInflater, oclBtnOk);
+
+        tv = (TextView) this.findViewById(R.id.tv_data);
+
+        mt = new MyTask();
+        mt.execute();
+    }
+
+    private void fill(LayoutInflater ltInflater, View.OnClickListener oclBtnOk) {
         for (int i = 0; i < name.length; i++) {
-            Log.d("myLogs", "i = " + i);
             View item = ltInflater.inflate(R.layout.item, linLayout, false);
 
             item.setOnClickListener(oclBtnOk);
@@ -67,15 +78,31 @@ public class MainActivity extends AppCompatActivity {
             item.setBackgroundColor(colors[i % 2]);
             linLayout.addView(item);
         }
+    }
 
-        tv = (TextView) this.findViewById(R.id.tv_data);
+    private void fill(Iterator<String> names) {
+        int i = 0;
+        while (names.hasNext()) {
+            String key = names.next();
 
-        mt = new MyTask();
-        mt.execute();
+            View item = ltInflater.inflate(R.layout.item, linLayout, false);
+
+            item.setOnClickListener(oclBtnOk);
+
+            TextView tvName = (TextView) item.findViewById(R.id.tvName);
+            tvName.setText(key);
+            TextView tvPosition = (TextView) item.findViewById(R.id.tvPosition);
+            //tvPosition.setText("Должность: " + position[i]);
+            TextView tvSalary = (TextView) item.findViewById(R.id.tvSalary);
+            //tvSalary.setText("Оклад: " + String.valueOf(salary[i]));
+            item.getLayoutParams().width = LinearLayout.LayoutParams.MATCH_PARENT;
+            item.setBackgroundColor(colors[i++ % 2]);
+            linLayout.addView(item);
+        }
     }
 
     class MyTask extends AsyncTask<Void, Void, Void> {
-
+        Iterator<String> level;
         public void testDB() {
             try {
 
@@ -92,20 +119,23 @@ public class MainActivity extends AppCompatActivity {
                  */
 
                 // online testing
-                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/hotel", "Alexander", "vertex77" );
+                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
 
                 String result = "Database connection success\n";
                 Statement st = con.createStatement();
 
-                ResultSet rs = st.executeQuery("select * from tablename ");
+                ResultSet rs = st.executeQuery("select * from menu ");
                 ResultSetMetaData rsmd = rs.getMetaData();
 
                 while (rs.next()) {
 
                     result += rsmd.getColumnName(1) + ": " + rs.getString(1) + "\n";
+                    result += rsmd.getColumnName(2) + ": " + rs.getString(2) + "\n";
+                    BarMenu barMenu = new BarMenu(rs.getString(2));
 
+                    level = barMenu.firstLevel();
                 }
-                tv.setText(result);
+                Log.d("myLogs", result);
             } catch (Exception e) {
                 e.printStackTrace();
                 tv.setText(e.toString());
@@ -134,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
             tv.setText("End");
+            fill(level);
         }
     }
 }

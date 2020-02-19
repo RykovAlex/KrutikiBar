@@ -1,2 +1,2 @@
-include ':app', ':myapplication', ':myapplication2', ':myapplication3', ':myapplication2', ':myapplication4', ':myapplication5'
+include ':app', ':myapplication', ':myapplication2', ':myapplication3', ':myapplication2', ':myapplication4', ':myapplication5', ':myapplication6', ':myapplication7', ':barmenuselect'
 rootProject.name='My Application'
