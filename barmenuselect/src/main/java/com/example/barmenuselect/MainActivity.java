@@ -55,17 +55,29 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         loadMenuTask.execute();
     }
 
+    // создание Header
+    View createHeader(String text) {
+        View v = getLayoutInflater().inflate(R.layout.menu_header, null);
+        ((TextView) v.findViewById(R.id.tvName)).setText(text);
+        return v;
+    }
+
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         data.clear();
-        data.addAll(barMenu.getLevel(position));
+        String index = ((TextView) view.findViewById(R.id.tvName)).getText().toString();
+        if (id < 0) {
+            data.addAll(barMenu.upLevel(index));
+        }else {
+            data.addAll(barMenu.getLevel(index));
+        }
         simpleAdapter.notifyDataSetChanged();
     }
 
     @Override
     public boolean setViewValue(View view, Object data, String textRepresentation) {
-        ((TextView) view).setText(textRepresentation);
-        return true;
+        //((TextView) view).setText(textRepresentation);
+        return false;
     }
 
     class LoadMenuTask extends AsyncTask<Void, Void, Void> {
@@ -104,117 +116,66 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private class BarMenu {
         private JSONObject jObject;
-        private JSONArray jCurArray;
         private JSONObject jCurObject;
+        private ArrayList<String> selectedKeys;
+        private HashMap<String, JSONObject> maps;
+        private HashMap<String, View> headers;
 
         public BarMenu(String jsonStr) {
             super();
             try {
                 jObject = new JSONObject(jsonStr);
-                Iterator<String> keys = jObject.keys();
+                jCurObject = jObject;
 
-                while (keys.hasNext()) {
-                    String key = keys.next();
-                    Log.d("myLogs", key);
-                    JSONArray jsonArray = jObject.optJSONArray(key);
-
-                    if (jsonArray != null) {
-                        for (int i = 0; i < jsonArray.length(); i++) {
-                            try {
-                                JSONObject oneObject = jsonArray.getJSONObject(i);
-                                // Pulling items from the array
-                                String oneObjectsItem = oneObject.getString("Наименование");
-                                String oneObjectsItem2 = oneObject.getString("Цена");
-                            } catch (JSONException e) {
-                                // Oops
-                            }
-                        }
-                    }
-                }
-
+                selectedKeys = new ArrayList<>();
+                maps = new HashMap<>();
+                headers = new HashMap<>();
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
 
-        void top() {
-            jCurObject = jObject;
-            jCurArray = null;
-        }
-
-        ArrayList<Map<String, Object>> getLevel(Integer index) {
+        ArrayList<Map<String, Object>> getLevel(String index) {
 
             ArrayList<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
-            Iterator<String> keys;
 
             if (index == null) {
-                jCurObject = jObject;
-                jCurArray = null;
-
-                JSONArray names = jCurObject.names();
-                for (int i = 0; i < names.length(); ++i) {
-                    Map<String, Object> item = new HashMap<String, Object>();
-
-                    try {
-                        item.put(TAG_MENU_NAME, names.getString(i));
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-
-                    result.add(item);
-                }
-            } else {
-                if (jCurArray != null) {
-
-                }
                 if (jCurObject != null) {
                     JSONArray names = jCurObject.names();
-                    try {
-                        jCurArray = jCurObject.optJSONArray(names.getString(index.intValue()));
-                        if (jCurArray != null) {
-                            for (int i = 0; i < jCurArray.length(); ++i) {
-                                Map<String, Object> item = new HashMap<String, Object>();
+                    for (int i = 0; i < names.length(); ++i) {
+                        Map<String, Object> item = new HashMap<String, Object>();
 
-                                try {
-                                    JSONObject jsonObject = jCurArray.optJSONObject(i);
-                                    if (jsonObject != null) {
-                                        item.put(TAG_MENU_NAME, jsonObject.getString("Наименование") +" "+ jsonObject.getString("Единица"));
-                                    } else {
-                                        JSONArray jsonArray = jCurArray.optJSONArray(i);
-                                        if (jsonArray != null) {
-
-                                        }
-                                    }
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
-
-                                result.add(item);
-                            }
+                        try {
+                            item.put(TAG_MENU_NAME, names.getString(i));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
                         }
-                        jCurObject = jCurObject.optJSONObject(names.getString(index.intValue()));
-                        if (jCurObject != null) {
-                            names = jCurObject.names();
-                            for (int i = 0; i < names.length(); ++i) {
-                                Map<String, Object> item = new HashMap<String, Object>();
-
-                                try {
-                                    item.put(TAG_MENU_NAME, names.getString(i));
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
-                                result.add(item);
-                            }
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                        result.add(item);
                     }
                 }
+            } else {
+                View view = createHeader(index);
+                headers.put(index, view);
 
+                lvMenu.addHeaderView(view);
+                maps.put(index, jCurObject);
 
+                jCurObject = jCurObject.optJSONObject(index);
+                if (jCurObject != null) {
+                    result = getLevel(null);
+                }
             }
 
             return result;
+        }
+
+        ArrayList<Map<String, Object>> upLevel(String index) {
+
+            lvMenu.removeHeaderView(headers.get(index));
+            jCurObject = maps.get(index);
+            maps.remove(index);
+
+            return getLevel(null);
         }
     }
 }
