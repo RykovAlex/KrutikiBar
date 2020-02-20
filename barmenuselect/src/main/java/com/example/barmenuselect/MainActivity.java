@@ -31,7 +31,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     ArrayList<Map<String, Object>> data;
     SimpleAdapter simpleAdapter;
 
+    final String TAG_MENU_ID = "id";
     final String TAG_MENU_NAME = "name";
+    final String TAG_MENU_UNIT = "unit";
+    final String TAG_MENU_PRICE = "price";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,9 +43,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         lvMenu = findViewById(R.id.lvMenu);
 
         // массив имен атрибутов, из которых будут читаться данные
-        String[] from = {TAG_MENU_NAME};
+        String[] from = {TAG_MENU_ID,TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = {R.id.tvName};
+        int[] to = {R.id.tvId,R.id.tvName,R.id.tvUnit,R.id.tvPrice};
 
         data = new ArrayList<Map<String, Object>>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.menu_item, from, to);
@@ -56,16 +59,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     // создание Header
-    View createHeader(String text) {
+    View createHeader(String name, String id) {
         View v = getLayoutInflater().inflate(R.layout.menu_header, null);
-        ((TextView) v.findViewById(R.id.tvName)).setText(text);
+        ((TextView) v.findViewById(R.id.tvId)).setText(id);
+        ((TextView) v.findViewById(R.id.tvName)).setText(name);
         return v;
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         data.clear();
-        String index = ((TextView) view.findViewById(R.id.tvName)).getText().toString();
+        String index = ((TextView) view.findViewById(R.id.tvId)).getText().toString();
         if (id < 0) {
             data.addAll(barMenu.upLevel(index));
         }else {
@@ -135,6 +139,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
         }
 
+        void clearHeaders(String index){
+            int i = selectedKeys.indexOf(index);
+            while (selectedKeys.size() != i){
+                lvMenu.removeHeaderView(headers.get( selectedKeys.get(i) ));
+                selectedKeys.remove(i);
+            }
+        }
+
         ArrayList<Map<String, Object>> getLevel(String index) {
 
             ArrayList<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
@@ -146,7 +158,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         Map<String, Object> item = new HashMap<String, Object>();
 
                         try {
-                            item.put(TAG_MENU_NAME, names.getString(i));
+                            String namesString = names.getString(i);
+
+                            if ( null == jCurObject.optJSONObject(namesString)) {
+                                continue;
+                            }
+
+                            item.put(TAG_MENU_ID, namesString);
+                            item.put(TAG_MENU_NAME, jCurObject.getJSONObject(namesString).optString("Наименование"));
+                            item.put(TAG_MENU_UNIT, jCurObject.getJSONObject(namesString).optString("Единица")  );
+                            item.put(TAG_MENU_PRICE, jCurObject.getJSONObject(namesString).optString("Цена"));
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -154,15 +175,22 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     }
                 }
             } else {
-                View view = createHeader(index);
-                headers.put(index, view);
+                try {
+                    View view = null;
 
-                lvMenu.addHeaderView(view);
-                maps.put(index, jCurObject);
+                    view = createHeader( jCurObject.getJSONObject(index).optString("Наименование"), index );
+                    headers.put(index, view);
+                    selectedKeys.add(index);
 
-                jCurObject = jCurObject.optJSONObject(index);
-                if (jCurObject != null) {
-                    result = getLevel(null);
+                    lvMenu.addHeaderView(view);
+                    maps.put(index, jCurObject);
+
+                    jCurObject = jCurObject.optJSONObject(index);
+                    if (jCurObject != null) {
+                        result = getLevel(null);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
             }
 
@@ -171,7 +199,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         ArrayList<Map<String, Object>> upLevel(String index) {
 
-            lvMenu.removeHeaderView(headers.get(index));
+            clearHeaders(index);
+
             jCurObject = maps.get(index);
             maps.remove(index);
 
