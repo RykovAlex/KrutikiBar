@@ -1,5 +1,6 @@
 package com.example.barmenuselect;
 
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -25,16 +26,19 @@ import java.util.Map;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, SimpleAdapter.ViewBinder {
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, SimpleAdapter.ViewBinder, View.OnClickListener {
     BarMenu barMenu;
     ListView lvMenu;
     ArrayList<Map<String, Object>> data;
     SimpleAdapter simpleAdapter;
+    BarOrder barOrder;
 
+    final String TAG_MENU_COLOR = "color";
     final String TAG_MENU_ID = "id";
     final String TAG_MENU_NAME = "name";
     final String TAG_MENU_UNIT = "unit";
     final String TAG_MENU_PRICE = "price";
+    final String TAG_ORDER_COUNT = "count";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,16 +47,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         lvMenu = findViewById(R.id.lvMenu);
 
         // массив имен атрибутов, из которых будут читаться данные
-        String[] from = {TAG_MENU_ID,TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE};
+        String[] from = { TAG_MENU_ID, TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = {R.id.tvId,R.id.tvName,R.id.tvUnit,R.id.tvPrice};
+        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvCount, R.id.llMain};
 
         data = new ArrayList<Map<String, Object>>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.menu_item, from, to);
-        //simpleAdapter.setViewBinder(this);
+        simpleAdapter.setViewBinder(this);
 
         lvMenu.setAdapter(simpleAdapter);
         lvMenu.setOnItemClickListener(this);
+
+        barOrder = new BarOrder();
 
         LoadMenuTask loadMenuTask = new LoadMenuTask();
         loadMenuTask.execute();
@@ -68,20 +74,64 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        data.clear();
         String index = ((TextView) view.findViewById(R.id.tvId)).getText().toString();
         if (id < 0) {
+            data.clear();
             data.addAll(barMenu.upLevel(index));
-        }else {
-            data.addAll(barMenu.getLevel(index));
+            simpleAdapter.notifyDataSetChanged();
+        } else {
+            String unit = ((TextView) view.findViewById(R.id.tvUnit)).getText().toString();
+            if (!unit.isEmpty()) {
+                barOrder.add(index);
+                index = null;
+            }
+            refreshList(index);
         }
-        simpleAdapter.notifyDataSetChanged();
     }
 
     @Override
     public boolean setViewValue(View view, Object data, String textRepresentation) {
-        //((TextView) view).setText(textRepresentation);
+        switch (view.getId()) {
+            case R.id.llCount:
+                int count = (int) data;
+                if (count > 0) {
+                    view.setVisibility(View.VISIBLE);
+                } else {
+                    view.setVisibility(View.GONE);
+                }
+                return true;
+            case R.id.llMain:
+                String color = (String) data;
+                if (!color.isEmpty()) {
+                    view.setBackgroundColor(Color.parseColor(color));
+                }
+                return true;
+        }
         return false;
+    }
+
+    @Override
+    public void onClick(View v) {
+        View rootLayout = (View) v.getParent().getParent();
+        View layout = rootLayout.findViewById(R.id.llName);
+
+        String index = ((TextView) layout.findViewById(R.id.tvId)).getText().toString();
+
+        switch (v.getId()) {
+            case R.id.ibDown:
+                barOrder.remove(index);
+                break;
+            case R.id.ibUp:
+                barOrder.add(index);
+                break;
+        }
+        refreshList(null);
+    }
+
+    private void refreshList(String index) {
+        data.clear();
+        data.addAll(barMenu.getLevel(index));
+        simpleAdapter.notifyDataSetChanged();
     }
 
     class LoadMenuTask extends AsyncTask<Void, Void, Void> {
@@ -139,10 +189,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
         }
 
-        void clearHeaders(String index){
+        void clearHeaders(String index) {
             int i = selectedKeys.indexOf(index);
-            while (selectedKeys.size() != i){
-                lvMenu.removeHeaderView(headers.get( selectedKeys.get(i) ));
+            while (selectedKeys.size() != i) {
+                lvMenu.removeHeaderView(headers.get(selectedKeys.get(i)));
                 selectedKeys.remove(i);
             }
         }
@@ -160,14 +210,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         try {
                             String namesString = names.getString(i);
 
-                            if ( null == jCurObject.optJSONObject(namesString)) {
+                            if (null == jCurObject.optJSONObject(namesString)) {
                                 continue;
                             }
 
                             item.put(TAG_MENU_ID, namesString);
+                            item.put(TAG_MENU_COLOR, jCurObject.getJSONObject(namesString).optString("Цвет"));
                             item.put(TAG_MENU_NAME, jCurObject.getJSONObject(namesString).optString("Наименование"));
-                            item.put(TAG_MENU_UNIT, jCurObject.getJSONObject(namesString).optString("Единица")  );
+                            item.put(TAG_MENU_UNIT, jCurObject.getJSONObject(namesString).optString("Единица"));
                             item.put(TAG_MENU_PRICE, jCurObject.getJSONObject(namesString).optString("Цена"));
+                            item.put(TAG_ORDER_COUNT, barOrder.getCount(namesString));
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -178,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 try {
                     View view = null;
 
-                    view = createHeader( jCurObject.getJSONObject(index).optString("Наименование"), index );
+                    view = createHeader(jCurObject.getJSONObject(index).optString("Наименование"), index);
                     headers.put(index, view);
                     selectedKeys.add(index);
 
