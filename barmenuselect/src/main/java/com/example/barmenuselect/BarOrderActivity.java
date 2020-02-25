@@ -2,6 +2,7 @@ package com.example.barmenuselect;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -12,6 +13,11 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -28,6 +34,7 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
     private ListView lvOrder;
     private ArrayList<Map<String, Object>> data;
     private SimpleAdapter simpleAdapter;
+    private int slot = 10;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +91,8 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
                 startActivityForResult(intent, 0);
                 break;
             case R.id.bnSave:
+                SaveOrderTask saveOrderTask = new SaveOrderTask();
+                saveOrderTask.execute();
                 break;
             case R.id.bnOrder:
                 break;
@@ -144,4 +153,35 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
     }
+
+    class SaveOrderTask extends AsyncTask<Void, Void, Void> {
+
+        private void SaveOrder() {
+            try {
+                Class.forName("com.mysql.jdbc.Driver");
+                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+
+                Statement st = con.createStatement();
+                String strSlot = String.format("%d", slot);
+                if ( 0 == st.executeUpdate("update orders set orders.order='" +barOrder.toString()+ "' where id = " + strSlot)){
+                    st.executeUpdate("insert into orders (id, orders.order) values (" +strSlot+",'" +barOrder.toString()+ "')");
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            SaveOrder();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+        }
+    }
+
 }
