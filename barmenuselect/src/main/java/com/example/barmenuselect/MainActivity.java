@@ -1,9 +1,9 @@
 package com.example.barmenuselect;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -21,7 +21,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,12 +32,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     SimpleAdapter simpleAdapter;
     BarOrder barOrder;
 
+    @Override
+    public void onBackPressed() {
+        ok();
+        super.onBackPressed();
+    }
+
     final String TAG_MENU_COLOR = "color";
     final String TAG_MENU_ID = "id";
     final String TAG_MENU_NAME = "name";
     final String TAG_MENU_UNIT = "unit";
     final String TAG_MENU_PRICE = "price";
     final String TAG_ORDER_COUNT = "count";
+    final String TAG_MENU_GROUP = "group";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,9 +53,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         lvMenu = findViewById(R.id.lvMenu);
 
         // массив имен атрибутов, из которых будут читаться данные
-        String[] from = { TAG_MENU_ID, TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR};
+        String[] from = {TAG_MENU_ID, TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR, TAG_MENU_GROUP};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvCount, R.id.llMain};
+        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvCount, R.id.llMain, R.id.llName};
 
         data = new ArrayList<Map<String, Object>>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.menu_item, from, to);
@@ -57,16 +63,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         lvMenu.setAdapter(simpleAdapter);
         lvMenu.setOnItemClickListener(this);
-
-        barOrder = new BarOrder();
+        
+        Intent intent = getIntent();
+        barOrder = new BarOrder(intent.getStringExtra("barOrder"));
 
         LoadMenuTask loadMenuTask = new LoadMenuTask();
         loadMenuTask.execute();
     }
 
     // создание Header
-    View createHeader(String name, String id) {
+    View createHeader(String name, String id, String color) {
         View v = getLayoutInflater().inflate(R.layout.menu_header, null);
+        if (color.isEmpty()) {
+            v.setBackgroundColor(Color.WHITE);
+        } else {
+            v.setBackgroundColor(Color.parseColor(color));
+        }
+
         ((TextView) v.findViewById(R.id.tvId)).setText(id);
         ((TextView) v.findViewById(R.id.tvName)).setText(name);
         return v;
@@ -82,11 +95,22 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         } else {
             String unit = ((TextView) view.findViewById(R.id.tvUnit)).getText().toString();
             if (!unit.isEmpty()) {
-                barOrder.add(index);
+
+                barOrder.add(index, barMenu.getMenuItem(index));
                 index = null;
             }
             refreshList(index);
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
     }
 
     @Override
@@ -100,9 +124,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     view.setVisibility(View.GONE);
                 }
                 return true;
+            case R.id.llName:
+                int isGroup = (int) data;
+                if (isGroup == 1) {
+                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(24);
+                } else {
+                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(14);
+                }
+                return true;
             case R.id.llMain:
                 String color = (String) data;
-                if (!color.isEmpty()) {
+                if (color.isEmpty()) {
+                    view.setBackgroundColor(Color.WHITE);
+                } else {
                     view.setBackgroundColor(Color.parseColor(color));
                 }
                 return true;
@@ -122,10 +156,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 barOrder.remove(index);
                 break;
             case R.id.ibUp:
-                barOrder.add(index);
+                barOrder.add(index, barMenu.getMenuItem(index));
                 break;
         }
         refreshList(null);
+    }
+
+    private void ok() {
+        Intent intent = new Intent();
+        intent.putExtra("barOrder", barOrder.toString());
+        setResult(RESULT_OK, intent);
     }
 
     private void refreshList(String index) {
@@ -163,6 +203,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+            data.clear();
             data.addAll(barMenu.getLevel(null));
             simpleAdapter.notifyDataSetChanged();
         }
@@ -214,12 +255,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                                 continue;
                             }
 
+                            int isGroup = jCurObject.getJSONObject(namesString).optInt("Группа");
+                            String colorMenu = jCurObject.getJSONObject(namesString).optString("Цвет");
+                            if (isGroup == 1 && colorMenu.isEmpty()) {
+                                colorMenu = "#E3F2FD";
+                            }
                             item.put(TAG_MENU_ID, namesString);
-                            item.put(TAG_MENU_COLOR, jCurObject.getJSONObject(namesString).optString("Цвет"));
+                            item.put(TAG_MENU_COLOR, colorMenu);
                             item.put(TAG_MENU_NAME, jCurObject.getJSONObject(namesString).optString("Наименование"));
                             item.put(TAG_MENU_UNIT, jCurObject.getJSONObject(namesString).optString("Единица"));
                             item.put(TAG_MENU_PRICE, jCurObject.getJSONObject(namesString).optString("Цена"));
                             item.put(TAG_ORDER_COUNT, barOrder.getCount(namesString));
+                            item.put(TAG_MENU_GROUP, isGroup);
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -230,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 try {
                     View view = null;
 
-                    view = createHeader(jCurObject.getJSONObject(index).optString("Наименование"), index);
+                    view = createHeader(jCurObject.getJSONObject(index).optString("Наименование"), index, jCurObject.getJSONObject(index).optString("Цвет"));
                     headers.put(index, view);
                     selectedKeys.add(index);
 
@@ -257,6 +304,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             maps.remove(index);
 
             return getLevel(null);
+        }
+
+        public JSONObject getMenuItem(String index) {
+            return jCurObject.optJSONObject(index);
         }
     }
 }
