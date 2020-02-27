@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         lvMenu.setAdapter(simpleAdapter);
         lvMenu.setOnItemClickListener(this);
-        
+
         Intent intent = getIntent();
         barOrder = new BarOrder(intent.getStringExtra("barOrder"));
 
@@ -95,7 +95,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         } else {
             String unit = ((TextView) view.findViewById(R.id.tvUnit)).getText().toString();
             if (!unit.isEmpty()) {
-
                 barOrder.add(index, barMenu.getMenuItem(index));
                 index = null;
             }

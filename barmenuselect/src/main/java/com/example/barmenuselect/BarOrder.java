@@ -15,13 +15,15 @@ public class BarOrder {
     private ArrayList<BarOrderItem> items;
 
     final static String TAG_MENU_COLOR = "color";
-    final static String TAG_MENU_ID = "id";
-    final static String TAG_MENU_NAME = "name";
+    final static String TAG_ID = "id";
+    final static String TAG_NAME = "name";
     final static String TAG_MENU_UNIT = "unit";
     final static String TAG_MENU_PRICE = "price";
     final static String TAG_ORDER_COUNT = "count";
     final static String TAG_MENU_GROUP = "group";
-
+    final static String TAG_MENU_PERMITION = "permition";
+    final static String TAG_TABLE_ID = "tableId";
+    final static String TAG_TABLE_NAME = "tableName";
 
     public BarOrder() {
         super();
@@ -120,9 +122,9 @@ public class BarOrder {
                 if (isGroup == 1 && colorMenu.isEmpty()) {
                     colorMenu = "#E3F2FD";
                 }
-                item.put(TAG_MENU_ID, namesString);
+                item.put(TAG_ID, namesString);
                 item.put(TAG_MENU_COLOR, colorMenu);
-                item.put(TAG_MENU_NAME, jCurObject.getJSONObject(namesString).optString("Наименование"));
+                item.put(TAG_NAME, jCurObject.getJSONObject(namesString).optString("Наименование"));
                 item.put(TAG_MENU_UNIT, jCurObject.getJSONObject(namesString).optString("Единица"));
                 item.put(TAG_MENU_PRICE, jCurObject.getJSONObject(namesString).optString("Цена"));
                 item.put(TAG_ORDER_COUNT, jCurObject.getJSONObject(namesString).optInt("Количество"));

@@ -15,19 +15,20 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Map;
 
 import static com.example.barmenuselect.BarOrder.TAG_MENU_COLOR;
 import static com.example.barmenuselect.BarOrder.TAG_MENU_GROUP;
-import static com.example.barmenuselect.BarOrder.TAG_MENU_ID;
-import static com.example.barmenuselect.BarOrder.TAG_MENU_NAME;
+import static com.example.barmenuselect.BarOrder.TAG_ID;
+import static com.example.barmenuselect.BarOrder.TAG_MENU_PERMITION;
+import static com.example.barmenuselect.BarOrder.TAG_NAME;
 import static com.example.barmenuselect.BarOrder.TAG_MENU_PRICE;
 import static com.example.barmenuselect.BarOrder.TAG_MENU_UNIT;
 import static com.example.barmenuselect.BarOrder.TAG_ORDER_COUNT;
+import static com.example.barmenuselect.BarOrder.TAG_TABLE_ID;
+import static com.example.barmenuselect.BarOrder.TAG_TABLE_NAME;
 
 public class BarOrderActivity extends AppCompatActivity implements View.OnClickListener, SimpleAdapter.ViewBinder, AdapterView.OnItemClickListener {
     private BarOrder barOrder;
@@ -35,17 +36,23 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
     private ArrayList<Map<String, Object>> data;
     private SimpleAdapter simpleAdapter;
     private int slot = 10;
+    private String tableName;
+    private String tableId;
+    private String manName;
+    private String manId;
+    private View infoHeader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bar_order);
+        getSupportActionBar().hide();
 
         barOrder = new BarOrder();
         lvOrder = findViewById(R.id.lvOrder);
 
         // массив имен атрибутов, из которых будут читаться данные
-        String[] from = {TAG_MENU_ID, TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR, TAG_MENU_GROUP};
+        String[] from = {TAG_ID, TAG_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR, TAG_MENU_GROUP};
         // массив ID View-компонентов, в которые будут вставлять данные
         int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvCount, R.id.llMain, R.id.llName};
 
@@ -56,7 +63,24 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
         lvOrder.setAdapter(simpleAdapter);
         lvOrder.setOnItemClickListener(this);
 
+        Intent intent = getIntent();
+        manId = intent.getStringExtra(TAG_ID);
+        manName = intent.getStringExtra(TAG_NAME);
+        tableId = intent.getStringExtra(TAG_TABLE_ID);
+        tableName = intent.getStringExtra(TAG_TABLE_NAME);
+
+        infoHeader = createInfoHeader();
+        lvOrder.addHeaderView(infoHeader);
         refreshList();
+    }
+
+    private View createInfoHeader() {
+        View v = getLayoutInflater().inflate(R.layout.info_header, null);
+        v.setBackgroundColor(Color.parseColor("#DCEDC8"));
+        ((TextView) v.findViewById(R.id.tvName)).setText(manName);
+        ((TextView) v.findViewById(R.id.tvSum)).setText("0.00");
+        ((TextView) v.findViewById(R.id.tvTable)).setText(tableName);
+        return v;
     }
 
     @Override
@@ -78,6 +102,8 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
         data.clear();
         data.addAll(barOrder.getArrayList());
         simpleAdapter.notifyDataSetChanged();
+
+        ((TextView) infoHeader.findViewById(R.id.tvSum)).setText("10.00");
     }
 
     @Override
@@ -163,8 +189,8 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
 
                 Statement st = con.createStatement();
                 String strSlot = String.format("%d", slot);
-                if ( 0 == st.executeUpdate("update orders set orders.order='" +barOrder.toString()+ "' where id = " + strSlot)){
-                    st.executeUpdate("insert into orders (id, orders.order) values (" +strSlot+",'" +barOrder.toString()+ "')");
+                if (0 == st.executeUpdate("update orders set orders.order='" + barOrder.toString() + "' where id = " + strSlot)) {
+                    st.executeUpdate("insert into orders (id, orders.order) values (" + strSlot + ",'" + barOrder.toString() + "')");
                 }
 
             } catch (Exception e) {
