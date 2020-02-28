@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BarOrder {
+    private final String number;
     private ArrayList<BarOrderItem> items;
 
     final static String TAG_MENU_COLOR = "color";
@@ -24,23 +25,53 @@ public class BarOrder {
     final static String TAG_MENU_PERMITION = "permition";
     final static String TAG_TABLE_ID = "tableId";
     final static String TAG_TABLE_NAME = "tableName";
+    private String manId;
+    private String manName;
+    private String tableId;
+    private String tableName;
 
     public BarOrder() {
         super();
         items = new ArrayList<>();
+        number = "";
     }
 
     public BarOrder(String barOrderJSON) {
         super();
         items = new ArrayList<>();
         try {
-            JSONObject obj = new JSONObject(barOrderJSON);
-            JSONArray names = obj.names();
+            parse(new JSONObject(barOrderJSON));
+
+//            JSONObject obj = new JSONObject(barOrderJSON);
+//            JSONArray names = obj.names();
+//            for (int i = 0; names != null && i < names.length(); ++i) {
+//                String id = names.getString(i);
+//
+//                JSONObject item = obj.optJSONObject(id);
+//                items.add(new BarOrderItem(id, item.optInt("Печатать"), item));
+//            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        number = "";
+    }
+
+    public BarOrder(String _number, JSONObject jsonObject) {
+        number = _number;
+        parse(jsonObject);
+    }
+
+    private void parse(JSONObject jsonObject) {
+        manId = jsonObject.optString("Сотрудик");
+        manName = jsonObject.optString("СотрудикНаименование");
+        tableId = jsonObject.optString("Столик");
+        tableName = jsonObject.optString("СтоликНаименование");
+        JSONArray names = jsonObject.names();
+        try {
             for (int i = 0; names != null && i < names.length(); ++i) {
                 String id = names.getString(i);
-
-                JSONObject item = obj.optJSONObject(id);
-                items.add(new BarOrderItem(id, item.optInt("Количество"), item));
+                JSONObject item = jsonObject.optJSONObject(id);
+                items.add(new BarOrderItem(id, item.optInt("Печатать"), item));
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -85,7 +116,7 @@ public class BarOrder {
         for (int i = 0; i < items.size(); ++i) {
             try {
                 JSONObject subObj = items.get(i).getObject();
-                subObj.put("Количество", items.get(i).getCount());
+                subObj.put("Печатать", items.get(i).getCount());
                 obj.put(items.get(i).getId(), subObj);
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -104,11 +135,11 @@ public class BarOrder {
 
     ArrayList<Map<String, Object>> getArrayList() {
 
-        ArrayList<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+        ArrayList<Map<String, Object>> result = new ArrayList<>();
         JSONObject jCurObject = getJsonObject();
         JSONArray names = jCurObject.names();
         for (int i = 0; names != null && i < names.length(); ++i) {
-            Map<String, Object> item = new HashMap<String, Object>();
+            Map<String, Object> item = new HashMap<>();
 
             try {
                 String namesString = names.getString(i);
@@ -127,7 +158,7 @@ public class BarOrder {
                 item.put(TAG_NAME, jCurObject.getJSONObject(namesString).optString("Наименование"));
                 item.put(TAG_MENU_UNIT, jCurObject.getJSONObject(namesString).optString("Единица"));
                 item.put(TAG_MENU_PRICE, jCurObject.getJSONObject(namesString).optString("Цена"));
-                item.put(TAG_ORDER_COUNT, jCurObject.getJSONObject(namesString).optInt("Количество"));
+                item.put(TAG_ORDER_COUNT, jCurObject.getJSONObject(namesString).optInt("Печатать"));
                 item.put(TAG_MENU_GROUP, isGroup);
 
             } catch (JSONException e) {

@@ -12,6 +12,9 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -36,12 +39,14 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
     private String manId;
     private String manName;
     private String manPermition;
+    private ArrayList<BarOrder> listBarOrder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bar_start);
         lvMain = findViewById(R.id.lvMain);
+        listBarOrder = new ArrayList<>();
 
         // массив имен атрибутов, из которых будут читаться данные
         String[] from = {TAG_ID, TAG_NAME, TAG_MENU_TABLE, TAG_MENU_SEAT};
@@ -100,7 +105,7 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
             return;
         }
         Intent intent = new Intent(this, BarOrderActivity.class);
-        Map<String, Object> item = data.get((int)id);
+        Map<String, Object> item = data.get((int) id);
         intent.putExtra(TAG_ID, manId);
         intent.putExtra(TAG_NAME, manName);
         intent.putExtra(TAG_TABLE_ID, (String) item.get(TAG_ID));
@@ -150,4 +155,44 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
         }
     }
 
+    class LoadOrderListTask extends AsyncTask<Void, Void, Void> {
+
+        private void LoadMan() {
+            try {
+                Class.forName("com.mysql.jdbc.Driver");
+                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+
+                Statement st = con.createStatement();
+
+                ResultSet rs = st.executeQuery("select * from order_list order by id desc");
+                ResultSetMetaData rsmd = rs.getMetaData();
+
+                listBarOrder.clear();
+                if (rs.next()) {
+                    JSONObject jsonObject = new JSONObject(rs.getString(2));
+                    JSONArray names = jsonObject.names();
+                    for (int i = 0; i < names.length(); ++i) {
+                        String name = names.getString(i);
+                        BarOrder item = new BarOrder(name, jsonObject.getJSONObject(name));
+
+                        listBarOrder.add(item);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            LoadMan();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            simpleAdapter.notifyDataSetChanged();
+        }
+    }
 }
