@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/llMain"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -17,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0.2"
-            android:text="Name"
+            android:text="@string/name"
             android:textSize="18sp" />
 
         <TextView
@@ -25,9 +26,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0.8"
-            android:gravity="right"
-            android:text="Id"
-            android:visibility="gone" />
+            android:gravity="end"
+            android:text="@string/id"
+            android:visibility="gone"
+            tools:visibility="visible" />
     </LinearLayout>
 
     <LinearLayout
@@ -41,15 +43,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0.5"
-            android:text="Unit" />
+            android:text="@string/unit" />
 
         <TextView
             android:id="@+id/tvPrice"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0.1"
-            android:gravity="right"
-            android:text="Price" />
+            android:gravity="end"
+            android:text="@string/price" />
     </LinearLayout>
 
     <LinearLayout
@@ -63,25 +65,46 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:contentDescription="@string/delete_from_order"
             android:onClick="onClick"
             app:srcCompat="@android:drawable/arrow_down_float" />
 
         <TextView
-            android:id="@+id/tvCount"
+            android:id="@+id/tvPrintCount"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="0.1"
             android:gravity="center"
-            android:text="Count"
-            android:textSize="18sp" />
+            android:text="@string/print"
+            android:textSize="24sp" />
 
         <ImageButton
             android:id="@+id/ibUp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:contentDescription="@string/add_to_order"
             android:onClick="onClick"
             app:srcCompat="@android:drawable/arrow_up_float" />
+
+        <TextView
+            android:id="@+id/tvCount"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="0.1"
+            android:gravity="center"
+            android:text="@string/_0"
+            android:textColor="@android:color/holo_green_dark"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/tvDeletedCount"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/_0"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="24sp" />
 
     </LinearLayout>
 </LinearLayout>

@@ -10,7 +10,7 @@
     <ListView
         android:id="@+id/lvOrder"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1">
 
     </ListView>
@@ -18,31 +18,33 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="0.2"
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/bnMenu"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:onClick="onClick"
-            android:text="Меню" />
-
-        <Button
             android:id="@+id/bnSave"
+            style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:onClick="onClick"
-            android:text="Записать" />
+            android:text="@string/save"
+            android:textSize="18sp" />
 
         <Button
             android:id="@+id/bnOrder"
+            style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:onClick="onClick"
-            android:text="На кухню" />
+            android:text="@string/order"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/bnMenu"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="onClick"
+            android:text="@string/menu"
+            android:textSize="18sp" />
     </LinearLayout>
 </LinearLayout>

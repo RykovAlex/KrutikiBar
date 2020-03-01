@@ -5,81 +5,73 @@ import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Map;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+
+import static com.example.barmenuselect.BarOrder.TAG_ID;
+import static com.example.barmenuselect.BarOrder.TAG_INTENT_ORDER;
+import static com.example.barmenuselect.BarOrder.TAG_JSON_COUNT;
+import static com.example.barmenuselect.BarOrder.TAG_JSON_DELETED_COUNT;
+import static com.example.barmenuselect.BarOrder.TAG_JSON_PRINT_COUNT;
 import static com.example.barmenuselect.BarOrder.TAG_MENU_COLOR;
 import static com.example.barmenuselect.BarOrder.TAG_MENU_GROUP;
-import static com.example.barmenuselect.BarOrder.TAG_ID;
-import static com.example.barmenuselect.BarOrder.TAG_MENU_PERMITION;
-import static com.example.barmenuselect.BarOrder.TAG_NAME;
 import static com.example.barmenuselect.BarOrder.TAG_MENU_PRICE;
 import static com.example.barmenuselect.BarOrder.TAG_MENU_UNIT;
+import static com.example.barmenuselect.BarOrder.TAG_NAME;
 import static com.example.barmenuselect.BarOrder.TAG_ORDER_COUNT;
-import static com.example.barmenuselect.BarOrder.TAG_TABLE_ID;
-import static com.example.barmenuselect.BarOrder.TAG_TABLE_NAME;
 
-public class BarOrderActivity extends AppCompatActivity implements View.OnClickListener, SimpleAdapter.ViewBinder, AdapterView.OnItemClickListener {
+public class BarOrderActivity extends AppCompatActivity implements View.OnClickListener, SimpleAdapter.ViewBinder {
     private BarOrder barOrder;
-    private ListView lvOrder;
     private ArrayList<Map<String, Object>> data;
     private SimpleAdapter simpleAdapter;
-    private int slot = 10;
-    private String tableName;
-    private String tableId;
-    private String manName;
-    private String manId;
     private View infoHeader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bar_order);
-        getSupportActionBar().hide();
 
-        barOrder = new BarOrder();
-        lvOrder = findViewById(R.id.lvOrder);
+        if (getSupportActionBar() != null)
+            getSupportActionBar().hide();
+
+        Intent intent = getIntent();
+        String jsonOrder = intent.getStringExtra(TAG_INTENT_ORDER);
+
+        barOrder = new BarOrder(jsonOrder);
+        ListView lvOrder = findViewById(R.id.lvOrder);
 
         // массив имен атрибутов, из которых будут читаться данные
-        String[] from = {TAG_ID, TAG_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR, TAG_MENU_GROUP};
+        String[] from = {TAG_ID, TAG_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_JSON_PRINT_COUNT, TAG_MENU_COLOR, TAG_MENU_GROUP, TAG_JSON_COUNT, TAG_JSON_DELETED_COUNT};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvCount, R.id.llMain, R.id.llName};
+        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvPrintCount, R.id.llMain, R.id.llName, R.id.tvCount, R.id.tvDeletedCount};
 
-        data = new ArrayList<Map<String, Object>>();
+        data = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.menu_item, from, to);
         simpleAdapter.setViewBinder(this);
 
         lvOrder.setAdapter(simpleAdapter);
-        lvOrder.setOnItemClickListener(this);
 
-        Intent intent = getIntent();
-        manId = intent.getStringExtra(TAG_ID);
-        manName = intent.getStringExtra(TAG_NAME);
-        tableId = intent.getStringExtra(TAG_TABLE_ID);
-        tableName = intent.getStringExtra(TAG_TABLE_NAME);
-
-        infoHeader = createInfoHeader();
+        infoHeader = createInfoHeader(lvOrder);
         lvOrder.addHeaderView(infoHeader);
         refreshList();
     }
 
-    private View createInfoHeader() {
-        View v = getLayoutInflater().inflate(R.layout.info_header, null);
+    private View createInfoHeader(ListView parent) {
+        View v = getLayoutInflater().inflate(R.layout.info_header, parent, false);
         v.setBackgroundColor(Color.parseColor("#DCEDC8"));
-        ((TextView) v.findViewById(R.id.tvName)).setText(manName);
-        ((TextView) v.findViewById(R.id.tvSum)).setText("0.00");
-        ((TextView) v.findViewById(R.id.tvTable)).setText(tableName);
+        ((TextView) v.findViewById(R.id.tvName)).setText(barOrder.getManName());
+        ((TextView) v.findViewById(R.id.tvTable)).setText(barOrder.getTableName());
         return v;
     }
 
@@ -103,13 +95,12 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
         data.addAll(barOrder.getArrayList());
         simpleAdapter.notifyDataSetChanged();
 
-        ((TextView) infoHeader.findViewById(R.id.tvSum)).setText("10.00");
+        String formattedDouble = String.format(Locale.US, "%.02f", barOrder.getPrice());
+        ((TextView) infoHeader.findViewById(R.id.tvSum)).setText(formattedDouble);
     }
 
     @Override
     public void onClick(View v) {
-
-
         switch (v.getId()) {
             case R.id.bnMenu:
                 Intent intent = new Intent(this, MainActivity.class);
@@ -118,9 +109,15 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
                 break;
             case R.id.bnSave:
                 SaveOrderTask saveOrderTask = new SaveOrderTask();
-                saveOrderTask.execute();
+                barOrder.setToKitchen(false);
+                saveOrderTask.execute(barOrder.getTableId(), barOrder.toString());
+                finish();
                 break;
             case R.id.bnOrder:
+                saveOrderTask = new SaveOrderTask();
+                barOrder.setToKitchen(true);
+                saveOrderTask.execute(barOrder.getTableId(), barOrder.toString());
+                finish();
                 break;
             case R.id.ibDown:
                 String index = getIndex(v);
@@ -148,7 +145,7 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
     public boolean setViewValue(View view, Object data, String textRepresentation) {
         switch (view.getId()) {
             case R.id.llCount:
-                int count = (int) data;
+                double count = (double) data;
                 if (count > 0) {
                     view.setVisibility(View.VISIBLE);
                 } else {
@@ -156,12 +153,12 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
                 }
                 return true;
             case R.id.llName:
-                int isGroup = (int) data;
-                if (isGroup == 1) {
-                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(24);
-                } else {
-                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(14);
-                }
+//                int isGroup = (int) data;
+//                if (isGroup == 1) {
+//                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(24);
+//                } else {
+//                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(14);
+//                }
                 return true;
             case R.id.llMain:
                 String color = (String) data;
@@ -175,22 +172,16 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
         return false;
     }
 
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-    }
-
-    class SaveOrderTask extends AsyncTask<Void, Void, Void> {
-
-        private void SaveOrder() {
+    static class SaveOrderTask extends AsyncTask<String, Void, Void> {
+        private void SaveOrder(String id, String order) {
             try {
                 Class.forName("com.mysql.jdbc.Driver");
                 Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
 
                 Statement st = con.createStatement();
-                String strSlot = String.format("%d", slot);
-                if (0 == st.executeUpdate("update orders set orders.order='" + barOrder.toString() + "' where id = " + strSlot)) {
-                    st.executeUpdate("insert into orders (id, orders.order) values (" + strSlot + ",'" + barOrder.toString() + "')");
+
+                if (0 == st.executeUpdate("update orders set orders.order='" + order + "' where id = '" + id + "'")) {
+                    st.executeUpdate("insert into orders (id, orders.order) values ('" + id + "','" + order + "')");
                 }
 
             } catch (Exception e) {
@@ -199,8 +190,8 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
         }
 
         @Override
-        protected Void doInBackground(Void... voids) {
-            SaveOrder();
+        protected Void doInBackground(String... params) {
+            SaveOrder(params[0], params[1].replace("\"","\\\""));
             return null;
         }
 

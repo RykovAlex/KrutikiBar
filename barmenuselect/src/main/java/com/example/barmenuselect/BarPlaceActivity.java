@@ -2,58 +2,67 @@ package com.example.barmenuselect;
 
 import android.content.Intent;
 import android.graphics.Color;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import static com.example.barmenuselect.BarOrder.TAG_ID;
+import static com.example.barmenuselect.BarOrder.TAG_INTENT_ORDER;
+import static com.example.barmenuselect.BarOrder.TAG_JSON_MAN_ID;
+import static com.example.barmenuselect.BarOrder.TAG_JSON_MAN_NAME;
+import static com.example.barmenuselect.BarOrder.TAG_JSON_TABLE_ID;
+import static com.example.barmenuselect.BarOrder.TAG_JSON_TABLE_NAME;
+import static com.example.barmenuselect.BarOrder.TAG_MENU_PERMISSION;
 import static com.example.barmenuselect.BarOrder.TAG_NAME;
-import static com.example.barmenuselect.BarOrder.TAG_MENU_PERMITION;
-import static com.example.barmenuselect.BarOrder.TAG_TABLE_ID;
-import static com.example.barmenuselect.BarOrder.TAG_TABLE_NAME;
 
 public class BarPlaceActivity extends AppCompatActivity implements View.OnClickListener, SimpleAdapter.ViewBinder, AdapterView.OnItemClickListener {
     private static final String TAG_MENU_TABLE = "table";
     private static final String TAG_MENU_SEAT = "seat";
+    private static final String TAG_ORDER_NUMBER = "order_number";
+    private static final String TAG_ORDER_MAN = "order_man";
     private ArrayList<Map<String, Object>> data;
-    private ListView lvMain;
     private SimpleAdapter simpleAdapter;
     private String manId;
     private String manName;
-    private String manPermition;
+    private String manPermission;
     private ArrayList<BarOrder> listBarOrder;
+    private Timer timer = new Timer();
+    private final Handler handler = new Handler();
+    private String lastTimestamp = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bar_start);
-        lvMain = findViewById(R.id.lvMain);
+        ListView lvMain = findViewById(R.id.lvMain);
         listBarOrder = new ArrayList<>();
 
         // массив имен атрибутов, из которых будут читаться данные
-        String[] from = {TAG_ID, TAG_NAME, TAG_MENU_TABLE, TAG_MENU_SEAT};
+        String[] from = {TAG_ID, TAG_NAME, TAG_MENU_TABLE, TAG_MENU_SEAT, TAG_ORDER_NUMBER, TAG_ORDER_MAN, TAG_ORDER_NUMBER};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = {R.id.tvId, R.id.tvName, R.id.tvTable, R.id.tvSeat};
+        int[] to = {R.id.tvId, R.id.tvName, R.id.tvTable, R.id.tvSeat, R.id.tvOrderNumber, R.id.tvOrderName, R.id.llOrder};
 
-        data = new ArrayList<Map<String, Object>>();
+        data = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.place_item, from, to);
         simpleAdapter.setViewBinder(this);
 
@@ -63,39 +72,136 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
         Intent intent = getIntent();
         manId = intent.getStringExtra(TAG_ID);
         manName = intent.getStringExtra(TAG_NAME);
-        manPermition = intent.getStringExtra(TAG_MENU_PERMITION);
+        manPermission = intent.getStringExtra(TAG_MENU_PERMISSION);
 
-        lvMain.addHeaderView(createManHeader());
+        lvMain.addHeaderView(createManHeader(lvMain));
         refresh();
     }
 
-    private View createManHeader() {
-        View v = getLayoutInflater().inflate(R.layout.man_item, null);
+    private BarOrder findOrder(String tableId) {
+        for (BarOrder barOrder :
+                listBarOrder) {
+            if (barOrder.getTableId().equals(tableId)) {
+                return barOrder;
+            }
+        }
+        return null;
+    }
+
+    private View createManHeader(ListView parent) {
+        View v = getLayoutInflater().inflate(R.layout.man_item, parent, false);
         v.setBackgroundColor(Color.parseColor("#DCEDC8"));
         ((TextView) v.findViewById(R.id.tvId)).setText(manId);
         ((TextView) v.findViewById(R.id.tvName)).setText(manName);
-        ((TextView) v.findViewById(R.id.tvTable)).setText(manPermition);
+        ((TextView) v.findViewById(R.id.tvTable)).setText(manPermission);
         return v;
     }
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.bnRefresh:
-                refresh();
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + v.getId());
+        if (v.getId() == R.id.bnRefresh) {
+            refresh();
+        } else {
+            throw new IllegalStateException("Unexpected value: " + v.getId());
+        }
+    }
+
+    private boolean LoadListOrder() {
+        boolean result = false;
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+
+            Statement st = con.createStatement();
+
+            ResultSet rs = st.executeQuery("select * from order_list order by id desc limit 1");
+
+            if (rs.next()) {
+                if (!lastTimestamp.equals(rs.getString(1))) {
+                    listBarOrder.clear();
+                    JSONObject jsonObject = new JSONObject(rs.getString(2));
+                    JSONArray names = jsonObject.names();
+                    for (int i = 0; i < names.length(); ++i) {
+                        String name = names.getString(i);
+                        BarOrder item = new BarOrder(name, jsonObject.getJSONObject(name));
+
+                        listBarOrder.add(item);
+                    }
+                    lastTimestamp = rs.getString(1);
+                    result = true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    private void LoadPlace() {
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+
+            Statement st = con.createStatement();
+
+            ResultSet rs = st.executeQuery("select * from place ");
+
+            data.clear();
+            int acceptedOrderCount = 0;
+            while (rs.next()) {
+                Map<String, Object> item = new HashMap<>();
+
+                String tableId = rs.getString(1);
+                item.put(TAG_ID, tableId);
+                item.put(TAG_NAME, rs.getString(2));
+                item.put(TAG_MENU_TABLE, rs.getString(3));
+                item.put(TAG_MENU_SEAT, rs.getString(4));
+
+                BarOrder barOrder = findOrder(tableId);
+                if (barOrder == null) {
+                    item.put(TAG_ORDER_NUMBER, "");
+                    item.put(TAG_ORDER_MAN, "");
+                    data.add(item);
+                } else {
+                    item.put(TAG_ORDER_NUMBER, barOrder.getNumber());
+                    item.put(TAG_ORDER_MAN, barOrder.getManName());
+                    data.add(acceptedOrderCount++, item);
+                }
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     void refresh() {
-        LoadDataTask loadDataTask = new LoadDataTask();
-        loadDataTask.execute();
+//        LoadTask loadDataTask = new LoadTask();
+//        loadDataTask.execute();
+        timer.schedule(
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        if ( LoadListOrder() ) {
+                            LoadPlace();
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    simpleAdapter.notifyDataSetChanged();
+                                }
+                            });
+                        }
+                    }
+                }
+                , 0, 3L * 1000);
     }
 
     @Override
     public boolean setViewValue(View view, Object data, String textRepresentation) {
+        if (view.getId() == R.id.llOrder) {
+            String number = (String) data;
+            view.setVisibility((number.isEmpty()) ? View.GONE : View.VISIBLE);
+            return true;
+        }
         return false;
     }
 
@@ -106,93 +212,102 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
         }
         Intent intent = new Intent(this, BarOrderActivity.class);
         Map<String, Object> item = data.get((int) id);
-        intent.putExtra(TAG_ID, manId);
-        intent.putExtra(TAG_NAME, manName);
-        intent.putExtra(TAG_TABLE_ID, (String) item.get(TAG_ID));
-        intent.putExtra(TAG_TABLE_NAME, (String) item.get(TAG_NAME));
+        BarOrder barOrder = findOrder((String) item.get(TAG_ID));
+        if (barOrder == null) {
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put(TAG_JSON_MAN_ID, manId);
+                jsonObject.put(TAG_JSON_MAN_NAME, manName);
+                jsonObject.put(TAG_JSON_TABLE_ID, item.get(TAG_ID));
+                jsonObject.put(TAG_JSON_TABLE_NAME, item.get(TAG_NAME));
+
+                intent.putExtra(TAG_INTENT_ORDER, jsonObject.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        } else {
+            intent.putExtra(TAG_INTENT_ORDER, barOrder.toString());
+        }
 
         startActivity(intent);
     }
 
-    class LoadDataTask extends AsyncTask<Void, Void, Void> {
+//    @SuppressLint("StaticFieldLeak")
+//    class LoadTask extends AsyncTask<Void, Void, Void> {
+//        private void LoadListOrder() {
+//            try {
+//                Class.forName("com.mysql.jdbc.Driver");
+//                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+//
+//                Statement st = con.createStatement();
+//
+//                ResultSet rs = st.executeQuery("select * from order_list order by id desc");
+//
+//                listBarOrder.clear();
+//                if (rs.next()) {
+//                    JSONObject jsonObject = new JSONObject(rs.getString(2));
+//                    JSONArray names = jsonObject.names();
+//                    for (int i = 0; i < names.length(); ++i) {
+//                        String name = names.getString(i);
+//                        BarOrder item = new BarOrder(name, jsonObject.getJSONObject(name));
+//
+//                        listBarOrder.add(item);
+//                    }
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//        private void LoadPlace() {
+//            try {
+//                Class.forName("com.mysql.jdbc.Driver");
+//                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+//
+//                Statement st = con.createStatement();
+//
+//                ResultSet rs = st.executeQuery("select * from place ");
+//
+//                data.clear();
+//                int acceptedOrderCount = 0;
+//                while (rs.next()) {
+//                    Map<String, Object> item = new HashMap<>();
+//
+//                    String tableId = rs.getString(1);
+//                    item.put(TAG_ID, tableId);
+//                    item.put(TAG_NAME, rs.getString(2));
+//                    item.put(TAG_MENU_TABLE, rs.getString(3));
+//                    item.put(TAG_MENU_SEAT, rs.getString(4));
+//
+//                    BarOrder barOrder = findOrder(tableId);
+//                    if (barOrder == null) {
+//                        item.put(TAG_ORDER_NUMBER, "");
+//                        item.put(TAG_ORDER_MAN, "");
+//                        data.add(item);
+//                    } else {
+//                        item.put(TAG_ORDER_NUMBER, barOrder.getNumber());
+//                        item.put(TAG_ORDER_MAN, barOrder.getManName());
+//                        data.add(acceptedOrderCount++, item);
+//                    }
+//
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//        @Override
+//        protected Void doInBackground(Void... voids) {
+//            LoadListOrder();
+//            LoadPlace();
+//            return null;
+//        }
+//
+//        @Override
+//        protected void onPostExecute(Void aVoid) {
+//            super.onPostExecute(aVoid);
+//            simpleAdapter.notifyDataSetChanged();
+//        }
+//    }
 
-        private void LoadMan() {
-            try {
-                Class.forName("com.mysql.jdbc.Driver");
-                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
-
-                Statement st = con.createStatement();
-
-                ResultSet rs = st.executeQuery("select * from place ");
-                ResultSetMetaData rsmd = rs.getMetaData();
-
-                data.clear();
-                while (rs.next()) {
-                    Map<String, Object> item = new HashMap<String, Object>();
-
-                    item.put(TAG_ID, rs.getString(1));
-                    item.put(TAG_NAME, rs.getString(2));
-                    item.put(TAG_MENU_TABLE, rs.getString(3));
-                    item.put(TAG_MENU_SEAT, rs.getString(4));
-
-                    data.add(item);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            LoadMan();
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            simpleAdapter.notifyDataSetChanged();
-        }
-    }
-
-    class LoadOrderListTask extends AsyncTask<Void, Void, Void> {
-
-        private void LoadMan() {
-            try {
-                Class.forName("com.mysql.jdbc.Driver");
-                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
-
-                Statement st = con.createStatement();
-
-                ResultSet rs = st.executeQuery("select * from order_list order by id desc");
-                ResultSetMetaData rsmd = rs.getMetaData();
-
-                listBarOrder.clear();
-                if (rs.next()) {
-                    JSONObject jsonObject = new JSONObject(rs.getString(2));
-                    JSONArray names = jsonObject.names();
-                    for (int i = 0; i < names.length(); ++i) {
-                        String name = names.getString(i);
-                        BarOrder item = new BarOrder(name, jsonObject.getJSONObject(name));
-
-                        listBarOrder.add(item);
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            LoadMan();
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            simpleAdapter.notifyDataSetChanged();
-        }
-    }
 }

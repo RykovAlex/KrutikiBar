@@ -1,8 +1,5 @@
 package com.example.barmenuselect;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -11,8 +8,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 public class BarOrder {
-    private final String number;
+    private String number;
     private ArrayList<BarOrderItem> items;
 
     final static String TAG_MENU_COLOR = "color";
@@ -22,56 +22,56 @@ public class BarOrder {
     final static String TAG_MENU_PRICE = "price";
     final static String TAG_ORDER_COUNT = "count";
     final static String TAG_MENU_GROUP = "group";
-    final static String TAG_MENU_PERMITION = "permition";
+    final static String TAG_MENU_PERMISSION = "permission";
     final static String TAG_TABLE_ID = "tableId";
     final static String TAG_TABLE_NAME = "tableName";
+    final static String TAG_JSON_MAN_ID = "Сотрудник";
+    final static String TAG_JSON_MAN_NAME = "СотрудникНаименование";
+    final static String TAG_JSON_TABLE_ID = "Столик";
+    final static String TAG_JSON_TABLE_NAME = "СтоликНаименование";
+    final static String TAG_JSON_COUNT = "Количество";
+    final static String TAG_JSON_PRINT_COUNT = "Печатать";
+    final static String TAG_JSON_DELETED_COUNT = "Удалено";
+    final static String TAG_JSON_ORDER_NUMBER = "НомерДок";
+    final static String TAG_INTENT_ORDER = "barorder";
+
     private String manId;
     private String manName;
     private String tableId;
     private String tableName;
+    private boolean toKitchen;
 
-    public BarOrder() {
+    BarOrder(String barOrderJSON) {
         super();
-        items = new ArrayList<>();
-        number = "";
-    }
-
-    public BarOrder(String barOrderJSON) {
-        super();
-        items = new ArrayList<>();
         try {
             parse(new JSONObject(barOrderJSON));
-
-//            JSONObject obj = new JSONObject(barOrderJSON);
-//            JSONArray names = obj.names();
-//            for (int i = 0; names != null && i < names.length(); ++i) {
-//                String id = names.getString(i);
-//
-//                JSONObject item = obj.optJSONObject(id);
-//                items.add(new BarOrderItem(id, item.optInt("Печатать"), item));
-//            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        number = "";
     }
 
-    public BarOrder(String _number, JSONObject jsonObject) {
-        number = _number;
+    BarOrder(String _number, JSONObject jsonObject) {
+        super();
         parse(jsonObject);
+        number = _number;
     }
 
     private void parse(JSONObject jsonObject) {
-        manId = jsonObject.optString("Сотрудик");
-        manName = jsonObject.optString("СотрудикНаименование");
-        tableId = jsonObject.optString("Столик");
-        tableName = jsonObject.optString("СтоликНаименование");
+        manId = jsonObject.optString(TAG_JSON_MAN_ID);
+        manName = jsonObject.optString(TAG_JSON_MAN_NAME);
+        tableId = jsonObject.optString(TAG_JSON_TABLE_ID);
+        tableName = jsonObject.optString(TAG_JSON_TABLE_NAME);
+        number = jsonObject.optString(TAG_JSON_ORDER_NUMBER);
+
+        items = new ArrayList<>();
         JSONArray names = jsonObject.names();
         try {
             for (int i = 0; names != null && i < names.length(); ++i) {
                 String id = names.getString(i);
                 JSONObject item = jsonObject.optJSONObject(id);
-                items.add(new BarOrderItem(id, item.optInt("Печатать"), item));
+                if (item != null) {
+                    items.add(new BarOrderItem(id, item.optDouble(TAG_JSON_COUNT), item.optDouble(TAG_JSON_PRINT_COUNT), item.optDouble(TAG_JSON_DELETED_COUNT), item));
+                }
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -79,23 +79,23 @@ public class BarOrder {
     }
 
     private int getIndex(String _id) {
-        return items.indexOf(new BarOrderItem(_id, 0, null));
+        return items.indexOf(new BarOrderItem(_id, 0, 0, 0, null));
     }
 
-    public void add(String _id, JSONObject menuItem) {
+    void add(String _id, JSONObject menuItem) {
         int index = getIndex(_id);
         if (index < 0) {
-            items.add(new BarOrderItem(_id, 1, menuItem));
+            items.add(new BarOrderItem(_id, 0, 1, 0, menuItem));
         } else {
             items.get(index).inc();
         }
     }
 
-    public void remove(String _id) {
+    void remove(String _id) {
         int index = getIndex(_id);
         if (index >= 0) {
             items.get(index).dec();
-            if (items.get(index).getCount() == 0) {
+            if (items.get(index).getItogCount() == 0) {
                 items.remove(index);
             }
         }
@@ -113,10 +113,25 @@ public class BarOrder {
         JSONObject obj;
 
         obj = new JSONObject();
+        try {
+            if (!number.isEmpty()) {
+                obj.put(TAG_JSON_ORDER_NUMBER, number);
+            }
+            obj.put("Заказ", toKitchen ? "да" : "нет");
+            obj.put(TAG_JSON_MAN_ID, manId);
+            obj.put(TAG_JSON_MAN_NAME, manName);
+            obj.put(TAG_JSON_TABLE_ID, tableId);
+            obj.put(TAG_JSON_TABLE_NAME, tableName);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
         for (int i = 0; i < items.size(); ++i) {
             try {
                 JSONObject subObj = items.get(i).getObject();
-                subObj.put("Печатать", items.get(i).getCount());
+                subObj.put(TAG_JSON_COUNT, items.get(i).getCount());
+                subObj.put(TAG_JSON_PRINT_COUNT, items.get(i).getPrintCount());
+                subObj.put(TAG_JSON_DELETED_COUNT, items.get(i).getDeletedCount());
                 obj.put(items.get(i).getId(), subObj);
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -125,10 +140,18 @@ public class BarOrder {
         return obj;
     }
 
-    public int getCount(String _id) {
+    double getPrice() {
+        double result = 0;
+        for (int i = 0; i < items.size(); ++i) {
+            result += items.get(i).getPrice();
+        }
+        return result;
+    }
+
+    double getPrintCount(String _id) {
         int index = getIndex(_id);
         if (index >= 0) {
-            return items.get(index).getCount();
+            return items.get(index).getPrintCount();
         }
         return 0;
     }
@@ -158,7 +181,14 @@ public class BarOrder {
                 item.put(TAG_NAME, jCurObject.getJSONObject(namesString).optString("Наименование"));
                 item.put(TAG_MENU_UNIT, jCurObject.getJSONObject(namesString).optString("Единица"));
                 item.put(TAG_MENU_PRICE, jCurObject.getJSONObject(namesString).optString("Цена"));
-                item.put(TAG_ORDER_COUNT, jCurObject.getJSONObject(namesString).optInt("Печатать"));
+                double printCount = jCurObject.getJSONObject(namesString).optDouble(TAG_JSON_PRINT_COUNT);
+                item.put(TAG_JSON_PRINT_COUNT, printCount);
+                double count = jCurObject.getJSONObject(namesString).optDouble(TAG_JSON_COUNT);
+                item.put(TAG_JSON_COUNT, count);
+                double deletedCount = jCurObject.getJSONObject(namesString).optDouble(TAG_JSON_DELETED_COUNT);
+                item.put(TAG_JSON_DELETED_COUNT, deletedCount);
+                item.put(TAG_ORDER_COUNT, printCount + count + deletedCount);
+
                 item.put(TAG_MENU_GROUP, isGroup);
 
             } catch (JSONException e) {
@@ -170,45 +200,95 @@ public class BarOrder {
         return result;
     }
 
+    String getTableId() {
+        return tableId;
+    }
 
-    private class BarOrderItem {
+    String getNumber() {
+        return number;
+    }
+
+    String getManName() {
+        return manName;
+    }
+
+    String getTableName() {
+        return tableName;
+    }
+
+    void setToKitchen(boolean b) {
+        toKitchen = b;
+    }
+
+
+    private static class BarOrderItem {
         private String id;
-        private int count;
+        private double count;
+        private double printCount;
+        private double deletedCount;
         private JSONObject menuItem;
 
         @Override
         public boolean equals(@Nullable Object obj) {
-            BarOrderItem item = (BarOrderItem) obj;
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
 
-            return item.id.equals(this.id);
+            BarOrderItem other = (BarOrderItem) obj;
+
+            return other.id.equals(this.id);
         }
 
-        public BarOrderItem(String _id, int _count, JSONObject _menuItem) {
+        BarOrderItem(String _id, double _count, double _printCount, double _deletedCount, JSONObject _menuItem) {
             super();
             id = _id;
             count = _count;
+            printCount = _printCount;
+            deletedCount = _deletedCount;
             menuItem = _menuItem;
         }
 
-        public void inc() {
-            ++count;
+        void inc() {
+            ++printCount;
         }
 
-        public void dec() {
-            --count;
+        void dec() {
+            if (printCount > 0)
+                --printCount;
         }
 
-        public int getCount() {
-            return count;
+        double getPrintCount() {
+            return printCount;
         }
 
         public String getId() {
             return id;
         }
 
-        public JSONObject getObject() {
+        JSONObject getObject() {
             return menuItem;
+        }
+
+        double getDeletedCount() {
+            return deletedCount;
+        }
+
+        double getCount() {
+            return count;
+        }
+
+        double getItogCount() {
+            return count + printCount - deletedCount;
+        }
+
+        double getPrice() {
+            double price = Double.parseDouble(menuItem.optString("Цена").replace(",",""));
+            return getItogCount() * price;
         }
 
     }
 }
+

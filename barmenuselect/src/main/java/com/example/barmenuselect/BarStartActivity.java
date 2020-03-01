@@ -21,7 +21,7 @@ import java.util.Map;
 
 import static com.example.barmenuselect.BarOrder.TAG_ID;
 import static com.example.barmenuselect.BarOrder.TAG_NAME;
-import static com.example.barmenuselect.BarOrder.TAG_MENU_PERMITION;
+import static com.example.barmenuselect.BarOrder.TAG_MENU_PERMISSION;
 
 public class BarStartActivity extends AppCompatActivity implements View.OnClickListener, SimpleAdapter.ViewBinder, AdapterView.OnItemClickListener {
 
@@ -36,7 +36,7 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
         lvMan = findViewById(R.id.lvMain);
 
         // массив имен атрибутов, из которых будут читаться данные
-        String[] from = {TAG_ID, TAG_NAME, TAG_MENU_PERMITION};
+        String[] from = {TAG_ID, TAG_NAME, TAG_MENU_PERMISSION};
         // массив ID View-компонентов, в которые будут вставлять данные
         int[] to = { R.id.tvId, R.id.tvName, R.id.tvTable};
 
@@ -77,7 +77,7 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
         Map<String, Object> item = data.get(position);
         intent.putExtra(TAG_ID, (String)item.get(TAG_ID));
         intent.putExtra(TAG_NAME, (String)item.get(TAG_NAME));
-        intent.putExtra(TAG_MENU_PERMITION, (String)item.get(TAG_MENU_PERMITION));
+        intent.putExtra(TAG_MENU_PERMISSION, (String)item.get(TAG_MENU_PERMISSION));
 
         startActivity(intent);
     }
@@ -100,7 +100,7 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
 
                     item.put(TAG_ID, rs.getString(1));
                     item.put(TAG_NAME, rs.getString(3));
-                    item.put(TAG_MENU_PERMITION, rs.getString(4));
+                    item.put(TAG_MENU_PERMISSION, rs.getString(4));
 
                     data.add(item);
                 }

@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // массив имен атрибутов, из которых будут читаться данные
         String[] from = {TAG_MENU_ID, TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR, TAG_MENU_GROUP};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvCount, R.id.llMain, R.id.llName};
+        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvPrintCount, R.id.llMain, R.id.llName};
 
         data = new ArrayList<Map<String, Object>>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.menu_item, from, to);
@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public boolean setViewValue(View view, Object data, String textRepresentation) {
         switch (view.getId()) {
             case R.id.llCount:
-                int count = (int) data;
+                double count = (double) data;
                 if (count > 0) {
                     view.setVisibility(View.VISIBLE);
                 } else {
@@ -264,7 +264,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             item.put(TAG_MENU_NAME, jCurObject.getJSONObject(namesString).optString("Наименование"));
                             item.put(TAG_MENU_UNIT, jCurObject.getJSONObject(namesString).optString("Единица"));
                             item.put(TAG_MENU_PRICE, jCurObject.getJSONObject(namesString).optString("Цена"));
-                            item.put(TAG_ORDER_COUNT, barOrder.getCount(namesString));
+                            item.put(TAG_ORDER_COUNT, barOrder.getPrintCount(namesString));
                             item.put(TAG_MENU_GROUP, isGroup);
                         } catch (JSONException e) {
                             e.printStackTrace();
