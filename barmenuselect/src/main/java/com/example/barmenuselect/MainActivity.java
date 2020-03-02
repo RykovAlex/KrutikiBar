@@ -1,7 +1,9 @@
 package com.example.barmenuselect;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
@@ -17,7 +19,6 @@ import org.json.JSONObject;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // массив ID View-компонентов, в которые будут вставлять данные
         int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvPrintCount, R.id.llMain, R.id.llName};
 
-        data = new ArrayList<Map<String, Object>>();
+        data = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.menu_item, from, to);
         simpleAdapter.setViewBinder(this);
 
@@ -72,12 +73,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     // создание Header
-    View createHeader(String name, String id, String color) {
-        View v = getLayoutInflater().inflate(R.layout.menu_header, null);
+    View createHeader(String name, String id, String color, ListView lvMenu) {
+        View v = getLayoutInflater().inflate(R.layout.menu_header, lvMenu, false);
         if (color.isEmpty()) {
             v.setBackgroundColor(Color.WHITE);
         } else {
-            v.setBackgroundColor(Color.parseColor(color));
+            try {
+                //v.setBackgroundColor(Color.parseColor(color));
+                int[] colors = {Color.parseColor("#FFFFFF"), Color.parseColor(color)};
+                GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, colors);
+                gd.setCornerRadius(0f);
+                v.setBackgroundDrawable(gd);
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
         }
 
         ((TextView) v.findViewById(R.id.tvId)).setText(id);
@@ -119,24 +128,38 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 double count = (double) data;
                 if (count > 0) {
                     view.setVisibility(View.VISIBLE);
+                    view.findViewById(R.id.tvCount).setVisibility(View.GONE);
+                    view.findViewById(R.id.tvDeletedCount).setVisibility(View.GONE);
                 } else {
                     view.setVisibility(View.GONE);
                 }
                 return true;
             case R.id.llName:
-                int isGroup = (int) data;
-                if (isGroup == 1) {
-                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(24);
-                } else {
-                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(14);
-                }
+//                int isGroup = (int) data;
+//                if (isGroup == 1) {
+//                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(24);
+//                } else {
+//                    //((TextView)view.findViewById(R.id.tvName)).setTextSize(14);
+//                }
                 return true;
             case R.id.llMain:
                 String color = (String) data;
                 if (color.isEmpty()) {
                     view.setBackgroundColor(Color.WHITE);
                 } else {
-                    view.setBackgroundColor(Color.parseColor(color));
+                    //view.setBackgroundColor(Color.parseColor(color));
+                    try {
+                        //int[] colors = {Color.parseColor("#FFFFFF"),Color.parseColor("#FFFFFF"), Color.parseColor(color)};
+                        int[] colors = {Color.WHITE, Color.parseColor(color)};
+                        GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, colors);
+                        gd.setCornerRadius(0f);
+                        //gd.setGradientCenter((float)0.05, (float)0.05);
+                        //gd.setStroke(8, Color.WHITE);
+                        view.setBackgroundDrawable(gd);
+
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
+                    }
                 }
                 return true;
         }
@@ -173,6 +196,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         simpleAdapter.notifyDataSetChanged();
     }
 
+    @SuppressLint("StaticFieldLeak")
     class LoadMenuTask extends AsyncTask<Void, Void, Void> {
 
         private void LoadMenu() {
@@ -183,7 +207,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Statement st = con.createStatement();
 
                 ResultSet rs = st.executeQuery("select * from menu ");
-                ResultSetMetaData rsmd = rs.getMetaData();
 
                 while (rs.next()) {
                     barMenu = new BarMenu(rs.getString(2));
@@ -209,17 +232,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     private class BarMenu {
-        private JSONObject jObject;
         private JSONObject jCurObject;
         private ArrayList<String> selectedKeys;
         private HashMap<String, JSONObject> maps;
         private HashMap<String, View> headers;
 
-        public BarMenu(String jsonStr) {
+        BarMenu(String jsonStr) {
             super();
             try {
-                jObject = new JSONObject(jsonStr);
-                jCurObject = jObject;
+                jCurObject = new JSONObject(jsonStr);
 
                 selectedKeys = new ArrayList<>();
                 maps = new HashMap<>();
@@ -239,13 +260,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         ArrayList<Map<String, Object>> getLevel(String index) {
 
-            ArrayList<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+            ArrayList<Map<String, Object>> result = new ArrayList<>();
 
             if (index == null) {
                 if (jCurObject != null) {
                     JSONArray names = jCurObject.names();
                     for (int i = 0; i < names.length(); ++i) {
-                        Map<String, Object> item = new HashMap<String, Object>();
+                        Map<String, Object> item = new HashMap<>();
 
                         try {
                             String namesString = names.getString(i);
@@ -255,7 +276,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             }
 
                             int isGroup = jCurObject.getJSONObject(namesString).optInt("Группа");
-                            String colorMenu = jCurObject.getJSONObject(namesString).optString("Цвет");
+                            String colorMenu = jCurObject.getJSONObject(namesString).optString("ЦветФона");
                             if (isGroup == 1 && colorMenu.isEmpty()) {
                                 colorMenu = "#E3F2FD";
                             }
@@ -274,9 +295,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
             } else {
                 try {
-                    View view = null;
+                    View view;
 
-                    view = createHeader(jCurObject.getJSONObject(index).optString("Наименование"), index, jCurObject.getJSONObject(index).optString("Цвет"));
+                    view = createHeader(jCurObject.getJSONObject(index).optString("Наименование"), index, jCurObject.getJSONObject(index).optString("ЦветФона"), lvMenu);
                     headers.put(index, view);
                     selectedKeys.add(index);
 
@@ -305,7 +326,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             return getLevel(null);
         }
 
-        public JSONObject getMenuItem(String index) {
+        JSONObject getMenuItem(String index) {
             return jCurObject.optJSONObject(index);
         }
     }
