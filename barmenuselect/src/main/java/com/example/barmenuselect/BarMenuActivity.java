@@ -26,7 +26,7 @@ import java.util.Map;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, SimpleAdapter.ViewBinder, View.OnClickListener {
+public class BarMenuActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, SimpleAdapter.ViewBinder, View.OnClickListener {
     BarMenu barMenu;
     ListView lvMenu;
     ArrayList<Map<String, Object>> data;
@@ -39,7 +39,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         super.onBackPressed();
     }
 
-    final String TAG_MENU_COLOR = "color";
+    final String TAG_MENU_COLOR_BACKGROUND = "colorBackground";
+    final String TAG_MENU_COLOR_TEXT = "colorText";
     final String TAG_MENU_ID = "id";
     final String TAG_MENU_NAME = "name";
     final String TAG_MENU_UNIT = "unit";
@@ -54,9 +55,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         lvMenu = findViewById(R.id.lvMenu);
 
         // массив имен атрибутов, из которых будут читаться данные
-        String[] from = {TAG_MENU_ID, TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR, TAG_MENU_GROUP};
+        String[] from = {TAG_MENU_ID, TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR_BACKGROUND, TAG_MENU_COLOR_TEXT, TAG_MENU_GROUP};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvPrintCount, R.id.llMain, R.id.llName};
+        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvPrintCount, R.id.llMain,  R.id.tvName, R.id.llName};
 
         data = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.menu_item, from, to);
@@ -124,6 +125,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public boolean setViewValue(View view, Object data, String textRepresentation) {
         switch (view.getId()) {
+            case R.id.tvName:
+                String colorText = (String) data;
+                if (!colorText.isEmpty() && colorText.charAt(0) == '#'){
+                    ((TextView)view).setTextColor(Color.parseColor(colorText));
+                    return true;
+                }
+                return false;
             case R.id.llCount:
                 double count = (double) data;
                 if (count > 0) {
@@ -276,12 +284,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             }
 
                             int isGroup = jCurObject.getJSONObject(namesString).optInt("Группа");
-                            String colorMenu = jCurObject.getJSONObject(namesString).optString("ЦветФона");
-                            if (isGroup == 1 && colorMenu.isEmpty()) {
-                                colorMenu = "#E3F2FD";
+                            String colorBackground = jCurObject.getJSONObject(namesString).optString("ЦветФона");
+                            if (isGroup == 1 && colorBackground.isEmpty()) {
+                                colorBackground = "#E3F2FD";
+                            }
+                            String colorText = jCurObject.getJSONObject(namesString).optString("ЦветТекста");
+                            if (colorText.isEmpty()) {
+                                colorText = "#000000";
                             }
                             item.put(TAG_MENU_ID, namesString);
-                            item.put(TAG_MENU_COLOR, colorMenu);
+                            item.put(TAG_MENU_COLOR_BACKGROUND, colorBackground);
+                            item.put(TAG_MENU_COLOR_TEXT, colorText);
                             item.put(TAG_MENU_NAME, jCurObject.getJSONObject(namesString).optString("Наименование"));
                             item.put(TAG_MENU_UNIT, jCurObject.getJSONObject(namesString).optString("Единица"));
                             item.put(TAG_MENU_PRICE, jCurObject.getJSONObject(namesString).optString("Цена"));

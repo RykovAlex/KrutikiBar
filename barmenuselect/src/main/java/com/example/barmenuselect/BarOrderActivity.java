@@ -103,7 +103,7 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.bnMenu:
-                Intent intent = new Intent(this, MainActivity.class);
+                Intent intent = new Intent(this, BarMenuActivity.class);
                 intent.putExtra("barOrder", barOrder.toString());
                 startActivityForResult(intent, 0);
                 break;
