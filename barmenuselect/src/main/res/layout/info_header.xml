@@ -5,15 +5,14 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:orientation="horizontal">
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Сумма к оплате:"
+            android:text="@string/sum_for_pay"
             android:textColor="@android:color/holo_blue_dark"
             android:textSize="30sp" />
 
@@ -21,8 +20,8 @@
             android:id="@+id/tvSum"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:gravity="right"
-            android:text="Sum"
+            android:gravity="end"
+            android:text="@string/sum"
             android:textColor="@android:color/holo_red_light"
             android:textSize="30sp" />
 
@@ -35,18 +34,18 @@
 
         <TextView
             android:id="@+id/tvName"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Name"
+            android:text="@string/name"
             android:textSize="18sp" />
 
         <TextView
             android:id="@+id/tvTable"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:gravity="right"
-            android:text="table"
+            android:gravity="end"
+            android:text="@string/table"
             android:textSize="18sp" />
 
     </LinearLayout>

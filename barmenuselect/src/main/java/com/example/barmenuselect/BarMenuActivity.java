@@ -273,7 +273,7 @@ public class BarMenuActivity extends AppCompatActivity implements AdapterView.On
             if (index == null) {
                 if (jCurObject != null) {
                     JSONArray names = jCurObject.names();
-                    for (int i = 0; i < names.length(); ++i) {
+                    for (int i = 0; names != null && i < names.length(); ++i) {
                         Map<String, Object> item = new HashMap<>();
 
                         try {

@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public class BarOrder {
+
     private String number;
     private ArrayList<BarOrderItem> items;
 
@@ -33,13 +34,15 @@ public class BarOrder {
     final static String TAG_JSON_PRINT_COUNT = "Печатать";
     final static String TAG_JSON_DELETED_COUNT = "Удалено";
     final static String TAG_JSON_ORDER_NUMBER = "НомерДок";
-    final static String TAG_INTENT_ORDER = "barorder";
+    final static String TAG_INTENT_ORDER = "barOrder";
+    final static String TAG_JSON_ORDER_AMOUNT = "Сумма";
 
     private String manId;
     private String manName;
     private String tableId;
     private String tableName;
     private boolean toKitchen;
+    private double amount;
 
     BarOrder(String barOrderJSON) {
         super();
@@ -62,6 +65,7 @@ public class BarOrder {
         tableId = jsonObject.optString(TAG_JSON_TABLE_ID);
         tableName = jsonObject.optString(TAG_JSON_TABLE_NAME);
         number = jsonObject.optString(TAG_JSON_ORDER_NUMBER);
+        amount = jsonObject.optDouble(TAG_JSON_ORDER_AMOUNT);
 
         items = new ArrayList<>();
         JSONArray names = jsonObject.names();
@@ -220,6 +224,10 @@ public class BarOrder {
         toKitchen = b;
     }
 
+    double getAmount() {
+        return amount;
+    }
+
 
     private static class BarOrderItem {
         private String id;
@@ -285,7 +293,7 @@ public class BarOrder {
         }
 
         double getPrice() {
-            double price = Double.parseDouble(menuItem.optString("Цена").replace(",",""));
+            double price = Double.parseDouble(menuItem.optString("Цена").replace(",", ""));
             return getItogCount() * price;
         }
 

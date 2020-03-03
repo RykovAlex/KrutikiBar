@@ -1,5 +1,10 @@
 package com.example.barmenuselect;
 
+import android.annotation.SuppressLint;
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -9,8 +14,12 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -36,11 +45,13 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
     private ArrayList<Map<String, Object>> data;
     private SimpleAdapter simpleAdapter;
     private View infoHeader;
+    private Context context;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bar_order);
+        context = this;
 
         if (getSupportActionBar() != null)
             getSupportActionBar().hide();
@@ -111,13 +122,13 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
                 SaveOrderTask saveOrderTask = new SaveOrderTask();
                 barOrder.setToKitchen(false);
                 saveOrderTask.execute(barOrder.getTableId(), barOrder.toString());
-                finish();
+
                 break;
             case R.id.bnOrder:
                 saveOrderTask = new SaveOrderTask();
                 barOrder.setToKitchen(true);
                 saveOrderTask.execute(barOrder.getTableId(), barOrder.toString());
-                finish();
+
                 break;
             case R.id.ibDown:
                 String index = getIndex(v);
@@ -172,7 +183,9 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
         return false;
     }
 
-    static class SaveOrderTask extends AsyncTask<String, Void, Void> {
+    @SuppressLint("StaticFieldLeak")
+    class SaveOrderTask extends AsyncTask<String, Void, Void> {
+
         private void SaveOrder(String id, String order) {
             try {
                 Class.forName("com.mysql.jdbc.Driver");
@@ -180,8 +193,26 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
 
                 Statement st = con.createStatement();
 
+                ResultSet rs = st.executeQuery("select * from order_list order by id desc limit 1");
+                String lastTimestamp;
+                if (rs.next()) {
+                    lastTimestamp = rs.getString(1);
+                } else {
+                    lastTimestamp = "empty";
+                }
+
                 if (0 == st.executeUpdate("update orders set orders.order='" + order + "' where id = '" + id + "'")) {
                     st.executeUpdate("insert into orders (id, orders.order) values ('" + id + "','" + order + "')");
+                }
+
+                for (int i = 0; i < 10; ++i) {
+                    rs = st.executeQuery("select * from order_list order by id desc limit 1");
+                    if (rs.next()) {
+                        if (!lastTimestamp.equals(rs.getString(1))) {
+                            break;
+                        }
+                    }
+                    Thread.sleep(1000);
                 }
 
             } catch (Exception e) {
@@ -189,15 +220,36 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
             }
         }
 
+        /**
+         * Runs on the UI thread before {@link #doInBackground}.
+         *
+         * @see #onPostExecute
+         * @see #doInBackground
+         */
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            ProgressDialog pd = new ProgressDialog(context);
+            pd.setTitle("Title");
+            pd.setMessage("Message");
+            // добавляем кнопку
+            pd.setButton(Dialog.BUTTON_POSITIVE, "OK", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                }
+            });
+            pd.show();
+        }
+
         @Override
         protected Void doInBackground(String... params) {
-            SaveOrder(params[0], params[1].replace("\"","\\\""));
+            SaveOrder(params[0], params[1].replace("\"", "\\\""));
             return null;
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+            finish();
         }
     }
 

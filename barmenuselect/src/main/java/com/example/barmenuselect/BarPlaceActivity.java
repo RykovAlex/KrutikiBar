@@ -20,16 +20,19 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import static com.example.barmenuselect.BarOrder.TAG_ID;
 import static com.example.barmenuselect.BarOrder.TAG_INTENT_ORDER;
 import static com.example.barmenuselect.BarOrder.TAG_JSON_MAN_ID;
 import static com.example.barmenuselect.BarOrder.TAG_JSON_MAN_NAME;
+import static com.example.barmenuselect.BarOrder.TAG_JSON_ORDER_AMOUNT;
 import static com.example.barmenuselect.BarOrder.TAG_JSON_TABLE_ID;
 import static com.example.barmenuselect.BarOrder.TAG_JSON_TABLE_NAME;
 import static com.example.barmenuselect.BarOrder.TAG_MENU_PERMISSION;
@@ -58,9 +61,9 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
         listBarOrder = new ArrayList<>();
 
         // массив имен атрибутов, из которых будут читаться данные
-        String[] from = {TAG_ID, TAG_NAME, TAG_MENU_TABLE, TAG_MENU_SEAT, TAG_ORDER_NUMBER, TAG_ORDER_MAN, TAG_ORDER_NUMBER};
+        String[] from = {TAG_ID, TAG_NAME, TAG_MENU_TABLE, TAG_MENU_SEAT, TAG_ORDER_NUMBER, TAG_ORDER_MAN, TAG_ORDER_NUMBER, TAG_JSON_ORDER_AMOUNT};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = {R.id.tvId, R.id.tvName, R.id.tvTable, R.id.tvSeat, R.id.tvOrderNumber, R.id.tvOrderName, R.id.llOrder};
+        int[] to = {R.id.tvId, R.id.tvName, R.id.tvTable, R.id.tvSeat, R.id.tvOrderNumber, R.id.tvOrderName, R.id.llOrder, R.id.tvSum};
 
         data = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.place_item, from, to);
@@ -130,6 +133,12 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
                     lastTimestamp = rs.getString(1);
                     result = true;
                 }
+            } else {
+                if (!lastTimestamp.equals("empty")) {
+                    listBarOrder.clear();
+                    lastTimestamp = "empty";
+                    result = true;
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -165,6 +174,7 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
                 } else {
                     item.put(TAG_ORDER_NUMBER, barOrder.getNumber());
                     item.put(TAG_ORDER_MAN, barOrder.getManName());
+                    item.put(TAG_JSON_ORDER_AMOUNT, barOrder.getAmount());
                     data.add(acceptedOrderCount++, item);
                 }
 
@@ -181,7 +191,7 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
                 new TimerTask() {
                     @Override
                     public void run() {
-                        if ( LoadListOrder() ) {
+                        if (LoadListOrder()) {
                             LoadPlace();
                             handler.post(new Runnable() {
                                 @Override
@@ -192,7 +202,7 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
                         }
                     }
                 }
-                , 0, 3L * 1000);
+                , 200, 3L * 1000);
     }
 
     @Override
@@ -201,8 +211,19 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
             String number = (String) data;
             view.setVisibility((number.isEmpty()) ? View.GONE : View.VISIBLE);
             return true;
+        } else if (view.getId() == R.id.tvSum) {
+            if (data == null) {
+                view.setVisibility( View.GONE );
+            } else {
+                double amount = (double) data;
+                String formattedDouble = String.format(Locale.US, "%.02f", amount);
+                ((TextView) view).setText(formattedDouble);
+                view.setVisibility( View.VISIBLE );
+            }
+            return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     @Override
@@ -229,9 +250,21 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
             intent.putExtra(TAG_INTENT_ORDER, barOrder.toString());
         }
 
-        startActivity(intent);
+        startActivityForResult(intent, 0);
     }
 
+    /**
+     * Dispatch incoming result to the correct fragment.
+     *
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        refresh();
+    }
 //    @SuppressLint("StaticFieldLeak")
 //    class LoadTask extends AsyncTask<Void, Void, Void> {
 //        private void LoadListOrder() {
