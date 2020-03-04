@@ -1,5 +1,6 @@
 package com.example.barmenuselect;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -13,34 +14,32 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.example.barmenuselect.BarOrder.TAG_ID;
-import static com.example.barmenuselect.BarOrder.TAG_NAME;
 import static com.example.barmenuselect.BarOrder.TAG_MENU_PERMISSION;
+import static com.example.barmenuselect.BarOrder.TAG_NAME;
 
 public class BarStartActivity extends AppCompatActivity implements View.OnClickListener, SimpleAdapter.ViewBinder, AdapterView.OnItemClickListener {
 
     private ArrayList<Map<String, Object>> data;
-    private ListView lvMan;
     private SimpleAdapter simpleAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bar_start);
-        lvMan = findViewById(R.id.lvMain);
+        ListView lvMan = findViewById(R.id.lvMain);
 
         // массив имен атрибутов, из которых будут читаться данные
         String[] from = {TAG_ID, TAG_NAME, TAG_MENU_PERMISSION};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = { R.id.tvId, R.id.tvName, R.id.tvTable};
+        int[] to = {R.id.tvId, R.id.tvName, R.id.tvTable};
 
-        data = new ArrayList<Map<String, Object>>();
+        data = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.man_item, from, to);
         simpleAdapter.setViewBinder(this);
 
@@ -52,12 +51,10 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.bnRefresh:
-                refresh();
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + v.getId());
+        if (v.getId() == R.id.bnRefresh) {
+            refresh();
+        } else {
+            throw new IllegalStateException("Unexpected value: " + v.getId());
         }
     }
 
@@ -75,37 +72,43 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Intent intent = new Intent(this, BarPlaceActivity.class);
         Map<String, Object> item = data.get(position);
-        intent.putExtra(TAG_ID, (String)item.get(TAG_ID));
-        intent.putExtra(TAG_NAME, (String)item.get(TAG_NAME));
-        intent.putExtra(TAG_MENU_PERMISSION, (String)item.get(TAG_MENU_PERMISSION));
+        intent.putExtra(TAG_ID, (String) item.get(TAG_ID));
+        intent.putExtra(TAG_NAME, (String) item.get(TAG_NAME));
+        intent.putExtra(TAG_MENU_PERMISSION, (String) item.get(TAG_MENU_PERMISSION));
 
         startActivity(intent);
     }
 
+    @SuppressLint("StaticFieldLeak")
     class LoadManTask extends AsyncTask<Void, Void, Void> {
 
         private void LoadMan() {
-            try {
-                Class.forName("com.mysql.jdbc.Driver");
-                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+            while (true) {
+                try {
+                    Class.forName("com.mysql.jdbc.Driver");
+                    DriverManager.setLoginTimeout(5);
+                    Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
 
-                Statement st = con.createStatement();
+                    Statement st = con.createStatement();
 
-                ResultSet rs = st.executeQuery("select * from man ");
-                ResultSetMetaData rsmd = rs.getMetaData();
+                    ResultSet rs = st.executeQuery("select * from man ");
 
-                data.clear();
-                while (rs.next()) {
-                    Map<String, Object> item = new HashMap<String, Object>();
+                    data.clear();
+                    while (rs.next()) {
+                        Map<String, Object> item = new HashMap<>();
 
-                    item.put(TAG_ID, rs.getString(1));
-                    item.put(TAG_NAME, rs.getString(3));
-                    item.put(TAG_MENU_PERMISSION, rs.getString(4));
+                        item.put(TAG_ID, rs.getString(1));
+                        item.put(TAG_NAME, rs.getString(3));
+                        item.put(TAG_MENU_PERMISSION, rs.getString(4));
 
-                    data.add(item);
+                        data.add(item);
+                    }
+                    break;
+
+                } catch (Exception e) {
+                    BarOrder.switchChannelIp();
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
 

@@ -113,7 +113,8 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
         boolean result = false;
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+            DriverManager.setLoginTimeout(5);
+            Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
 
             Statement st = con.createStatement();
 
@@ -124,7 +125,7 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
                     listBarOrder.clear();
                     JSONObject jsonObject = new JSONObject(rs.getString(2));
                     JSONArray names = jsonObject.names();
-                    for (int i = 0; i < names.length(); ++i) {
+                    for (int i = 0; names != null && i < names.length(); ++i) {
                         String name = names.getString(i);
                         BarOrder item = new BarOrder(name, jsonObject.getJSONObject(name));
 
@@ -149,7 +150,8 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
     private void LoadPlace() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+            DriverManager.setLoginTimeout(5);
+            Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
 
             Statement st = con.createStatement();
 
@@ -202,7 +204,7 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
                         }
                     }
                 }
-                , 200, 3L * 1000);
+                , 200, 2L * 1000);
     }
 
     @Override
@@ -253,13 +255,6 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
         startActivityForResult(intent, 0);
     }
 
-    /**
-     * Dispatch incoming result to the correct fragment.
-     *
-     * @param requestCode
-     * @param resultCode
-     * @param data
-     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

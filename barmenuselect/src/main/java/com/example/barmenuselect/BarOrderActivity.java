@@ -186,7 +186,8 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
         private void SaveOrder(String id, String order) {
             try {
                 Class.forName("com.mysql.jdbc.Driver");
-                Connection con = DriverManager.getConnection("jdbc:mysql://178.46.165.64:3306/bar", "Alexander", "vertex77");
+                DriverManager.setLoginTimeout(5);
+                Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
 
                 Statement st = con.createStatement();
 

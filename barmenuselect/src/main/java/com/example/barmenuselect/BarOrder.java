@@ -1,5 +1,8 @@
 package com.example.barmenuselect;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -7,9 +10,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 public class BarOrder {
 
@@ -24,8 +24,6 @@ public class BarOrder {
     final static String TAG_ORDER_COUNT = "count";
     final static String TAG_MENU_GROUP = "group";
     final static String TAG_MENU_PERMISSION = "permission";
-    final static String TAG_TABLE_ID = "tableId";
-    final static String TAG_TABLE_NAME = "tableName";
     final static String TAG_JSON_MAN_ID = "Сотрудник";
     final static String TAG_JSON_MAN_NAME = "СотрудникНаименование";
     final static String TAG_JSON_TABLE_ID = "Столик";
@@ -33,7 +31,7 @@ public class BarOrder {
     final static String TAG_JSON_COUNT = "Количество";
     final static String TAG_JSON_PRINT_COUNT = "Печатать";
     final static String TAG_JSON_DELETED_COUNT = "Удалено";
-    final static String TAG_JSON_ORDER_NUMBER = "НомерДок";
+    private final static String TAG_JSON_ORDER_NUMBER = "НомерДок";
     final static String TAG_INTENT_ORDER = "barOrder";
     final static String TAG_JSON_ORDER_AMOUNT = "Сумма";
 
@@ -43,6 +41,21 @@ public class BarOrder {
     private String tableName;
     private boolean toKitchen;
     private double amount;
+
+    private static final String[] channelIpList = {"jdbc:mysql://192.168.0.1:3306/bar","jdbc:mysql://178.46.165.64:3306/bar"};
+    private static String channelIp = channelIpList[0];
+
+    static String getChannelIp(){
+        return channelIp;
+    }
+
+    static void switchChannelIp(){
+        if (channelIp.equals(channelIpList[0])) {
+            channelIp = channelIpList[1];
+        } else {
+            channelIp = channelIpList[0];
+        }
+    }
 
     BarOrder(String barOrderJSON) {
         super();
@@ -99,7 +112,7 @@ public class BarOrder {
         int index = getIndex(_id);
         if (index >= 0) {
             items.get(index).dec();
-            if (items.get(index).getItogCount() == 0) {
+            if (items.get(index).getTotalCount() == 0) {
                 items.remove(index);
             }
         }
@@ -288,13 +301,13 @@ public class BarOrder {
             return count;
         }
 
-        double getItogCount() {
+        double getTotalCount() {
             return count + printCount - deletedCount;
         }
 
         double getPrice() {
             double price = Double.parseDouble(menuItem.optString("Цена").replace(",", ""));
-            return getItogCount() * price;
+            return getTotalCount() * price;
         }
 
     }
