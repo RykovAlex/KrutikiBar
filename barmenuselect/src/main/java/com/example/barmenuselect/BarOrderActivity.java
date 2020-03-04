@@ -14,8 +14,8 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -24,9 +24,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 
 import static com.example.barmenuselect.BarOrder.TAG_ID;
 import static com.example.barmenuselect.BarOrder.TAG_INTENT_ORDER;
@@ -230,8 +227,8 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
         protected void onPreExecute() {
             super.onPreExecute();
             ProgressDialog pd = new ProgressDialog(context);
-            pd.setTitle("Title");
-            pd.setMessage("Message");
+            pd.setTitle("Обработка заказа");
+            pd.setMessage("Идет процесс проведения заказа официанта в 1С:Трактир. Ждите ...");
             // добавляем кнопку
             pd.setButton(Dialog.BUTTON_POSITIVE, "OK", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int which) {

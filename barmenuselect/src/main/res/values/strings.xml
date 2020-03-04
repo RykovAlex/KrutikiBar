@@ -18,4 +18,5 @@
     <string name="seat">seat</string>
     <string name="order_number">Заказ №</string>
     <string name="number">number</string>
+    <string name="refersh">Обновить</string>
 </resources>
