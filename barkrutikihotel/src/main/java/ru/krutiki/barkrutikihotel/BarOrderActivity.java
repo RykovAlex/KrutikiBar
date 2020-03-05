@@ -14,10 +14,10 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
-import com.example.barkrutikihotel.R;
-
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.barkrutikihotel.R;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

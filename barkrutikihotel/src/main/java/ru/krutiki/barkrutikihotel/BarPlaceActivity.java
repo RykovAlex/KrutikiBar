@@ -10,6 +10,9 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.barkrutikihotel.R;
 
 import org.json.JSONArray;
@@ -26,9 +29,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 
 import static ru.krutiki.barkrutikihotel.BarOrder.TAG_ID;
 import static ru.krutiki.barkrutikihotel.BarOrder.TAG_INTENT_ORDER;

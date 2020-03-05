@@ -12,6 +12,8 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.barkrutikihotel.R;
 
 import org.json.JSONArray;
@@ -25,8 +27,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import androidx.appcompat.app.AppCompatActivity;
 
 public class BarMenuActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, SimpleAdapter.ViewBinder, View.OnClickListener {
     BarMenu barMenu;

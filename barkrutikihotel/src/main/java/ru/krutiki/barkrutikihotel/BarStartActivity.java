@@ -9,9 +9,9 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
-import com.example.barkrutikihotel.R;
-
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.barkrutikihotel.R;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
