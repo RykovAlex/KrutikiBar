@@ -85,7 +85,7 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
     class LoadManTask extends AsyncTask<Void, Void, Void> {
 
         private void LoadMan() {
-            while (true) {
+            for (int i = 0; i < 2; ++i) {
                 try {
                     Class.forName("com.mysql.jdbc.Driver");
                     DriverManager.setLoginTimeout(5);
@@ -124,6 +124,9 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             simpleAdapter.notifyDataSetChanged();
+            if (getSupportActionBar() != null)
+                getSupportActionBar().setSubtitle(BarOrder.getChannelName());
+
         }
     }
 

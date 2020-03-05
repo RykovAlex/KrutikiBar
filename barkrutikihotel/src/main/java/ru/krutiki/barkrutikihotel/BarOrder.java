@@ -3,6 +3,8 @@ package ru.krutiki.barkrutikihotel;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.example.barkrutikihotel.BuildConfig;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,18 +44,56 @@ public class BarOrder {
     private boolean toKitchen;
     private double amount;
 
-    private static final String[] channelIpList = {"jdbc:mysql://192.168.0.1:3306/bar","jdbc:mysql://178.46.165.64:3306/bar"};
-    private static String channelIp = channelIpList[0];
+    private static final String[] channelIpList = {"jdbc:mysql://192.168.0.1:3306/bar", "jdbc:mysql://178.46.165.64:3306/bar"};
+    private static final String[] channelIpTestList = {"jdbc:mysql://192.168.0.1:3306/bartest", "jdbc:mysql://178.46.165.64:3306/bartest"};
+    private static String channelIp = null;
 
-    static String getChannelIp(){
+    @SuppressWarnings("ConstantConditions")
+    static String getChannelIp() {
+        if (channelIp == null) {
+            if (BuildConfig.BUILD_TYPE.equals("release")) {
+                channelIp = channelIpList[0];
+            } else {
+                channelIp = channelIpTestList[0];
+            }
+        }
         return channelIp;
     }
 
-    static void switchChannelIp(){
-        if (channelIp.equals(channelIpList[0])) {
-            channelIp = channelIpList[1];
+    @SuppressWarnings("ConstantConditions")
+    static String getChannelName() {
+        final String s = "Внешний канал связи";
+        final String s1 = "Внутренний канал связи";
+        final String s2 =". Отладочный режим";
+        if (BuildConfig.BUILD_TYPE.equals("release")) {
+            if (channelIp.equals(channelIpList[0])) {
+                return s1;
+            } else {
+                return s;
+            }
         } else {
-            channelIp = channelIpList[0];
+            if (channelIp.equals(channelIpTestList[0])) {
+                return s1 + s2;
+            } else {
+                return s + s2;
+            }
+        }
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    static void switchChannelIp() {
+        if (BuildConfig.BUILD_TYPE.equals("release")) {
+            if (channelIp.equals(channelIpList[0])) {
+                channelIp = channelIpList[1];
+            } else {
+                channelIp = channelIpList[0];
+            }
+        } else {
+            if (channelIp.equals(channelIpTestList[0])) {
+                channelIp = channelIpTestList[1];
+            } else {
+                channelIp = channelIpTestList[0];
+            }
         }
     }
 

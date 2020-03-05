@@ -113,78 +113,86 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
 
     private boolean LoadListOrder() {
         boolean result = false;
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            DriverManager.setLoginTimeout(5);
-            Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
+        for (int j = 0; j < 2; ++j) {
+            try {
+                Class.forName("com.mysql.jdbc.Driver");
+                DriverManager.setLoginTimeout(5);
+                Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
 
-            Statement st = con.createStatement();
+                Statement st = con.createStatement();
 
-            ResultSet rs = st.executeQuery("select * from order_list order by id desc limit 1");
+                ResultSet rs = st.executeQuery("select * from order_list order by id desc limit 1");
 
-            if (rs.next()) {
-                if (!lastTimestamp.equals(rs.getString(1))) {
-                    listBarOrder.clear();
-                    JSONObject jsonObject = new JSONObject(rs.getString(2));
-                    JSONArray names = jsonObject.names();
-                    for (int i = 0; names != null && i < names.length(); ++i) {
-                        String name = names.getString(i);
-                        BarOrder item = new BarOrder(name, jsonObject.getJSONObject(name));
+                if (rs.next()) {
+                    if (!lastTimestamp.equals(rs.getString(1))) {
+                        listBarOrder.clear();
+                        JSONObject jsonObject = new JSONObject(rs.getString(2));
+                        JSONArray names = jsonObject.names();
+                        for (int i = 0; names != null && i < names.length(); ++i) {
+                            String name = names.getString(i);
+                            BarOrder item = new BarOrder(name, jsonObject.getJSONObject(name));
 
-                        listBarOrder.add(item);
+                            listBarOrder.add(item);
+                        }
+                        lastTimestamp = rs.getString(1);
+                        result = true;
                     }
-                    lastTimestamp = rs.getString(1);
-                    result = true;
+                } else {
+                    if (!lastTimestamp.equals("empty")) {
+                        listBarOrder.clear();
+                        lastTimestamp = "empty";
+                        result = true;
+                    }
                 }
-            } else {
-                if (!lastTimestamp.equals("empty")) {
-                    listBarOrder.clear();
-                    lastTimestamp = "empty";
-                    result = true;
-                }
+                break;
+            } catch (Exception e) {
+                BarOrder.switchChannelIp();
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         return result;
     }
 
     private void LoadPlace() {
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            DriverManager.setLoginTimeout(5);
-            Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
+        for (int i = 0; i < 2; ++i) {
+            try {
+                Class.forName("com.mysql.jdbc.Driver");
+                DriverManager.setLoginTimeout(5);
+                Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
 
-            Statement st = con.createStatement();
+                Statement st = con.createStatement();
 
-            ResultSet rs = st.executeQuery("select * from place ");
+                ResultSet rs = st.executeQuery("select * from place ");
 
-            data.clear();
-            int acceptedOrderCount = 0;
-            while (rs.next()) {
-                Map<String, Object> item = new HashMap<>();
+                data.clear();
+                int acceptedOrderCount = 0;
+                while (rs.next()) {
+                    Map<String, Object> item = new HashMap<>();
 
-                String tableId = rs.getString(1);
-                item.put(TAG_ID, tableId);
-                item.put(TAG_NAME, rs.getString(2));
-                item.put(TAG_MENU_TABLE, rs.getString(3));
-                item.put(TAG_MENU_SEAT, rs.getString(4));
+                    String tableId = rs.getString(1);
+                    item.put(TAG_ID, tableId);
+                    item.put(TAG_NAME, rs.getString(2));
+                    item.put(TAG_MENU_TABLE, rs.getString(3));
+                    item.put(TAG_MENU_SEAT, rs.getString(4));
 
-                BarOrder barOrder = findOrder(tableId);
-                if (barOrder == null) {
-                    item.put(TAG_ORDER_NUMBER, "");
-                    item.put(TAG_ORDER_MAN, "");
-                    data.add(item);
-                } else {
-                    item.put(TAG_ORDER_NUMBER, barOrder.getNumber());
-                    item.put(TAG_ORDER_MAN, barOrder.getManName());
-                    item.put(TAG_JSON_ORDER_AMOUNT, barOrder.getAmount());
-                    data.add(acceptedOrderCount++, item);
+                    BarOrder barOrder = findOrder(tableId);
+                    if (barOrder == null) {
+                        item.put(TAG_ORDER_NUMBER, "");
+                        item.put(TAG_ORDER_MAN, "");
+                        data.add(item);
+                    } else {
+                        item.put(TAG_ORDER_NUMBER, barOrder.getNumber());
+                        item.put(TAG_ORDER_MAN, barOrder.getManName());
+                        item.put(TAG_JSON_ORDER_AMOUNT, barOrder.getAmount());
+                        data.add(acceptedOrderCount++, item);
+                    }
+
                 }
-
+                break;
+            } catch (Exception e) {
+                BarOrder.switchChannelIp();
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -201,6 +209,8 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
                                 @Override
                                 public void run() {
                                     simpleAdapter.notifyDataSetChanged();
+                                    if (getSupportActionBar() != null)
+                                        getSupportActionBar().setSubtitle(BarOrder.getChannelName());
                                 }
                             });
                         }
@@ -217,12 +227,12 @@ public class BarPlaceActivity extends AppCompatActivity implements View.OnClickL
             return true;
         } else if (view.getId() == R.id.tvSum) {
             if (data == null) {
-                view.setVisibility( View.GONE );
+                view.setVisibility(View.GONE);
             } else {
                 double amount = (double) data;
                 String formattedDouble = String.format(Locale.US, "%.02f", amount);
                 ((TextView) view).setText(formattedDouble);
-                view.setVisibility( View.VISIBLE );
+                view.setVisibility(View.VISIBLE);
             }
             return true;
         } else {

@@ -210,20 +210,24 @@ public class BarMenuActivity extends AppCompatActivity implements AdapterView.On
     class LoadMenuTask extends AsyncTask<Void, Void, Void> {
 
         private void LoadMenu() {
-            try {
-                Class.forName("com.mysql.jdbc.Driver");
-                DriverManager.setLoginTimeout(5);
-                Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
+            for (int i = 0; i < 2; ++i) {
+                try {
+                    Class.forName("com.mysql.jdbc.Driver");
+                    DriverManager.setLoginTimeout(5);
+                    Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
 
-                Statement st = con.createStatement();
+                    Statement st = con.createStatement();
 
-                ResultSet rs = st.executeQuery("select * from menu ");
+                    ResultSet rs = st.executeQuery("select * from menu ");
 
-                while (rs.next()) {
-                    barMenu = new BarMenu(rs.getString(2));
+                    while (rs.next()) {
+                        barMenu = new BarMenu(rs.getString(2));
+                    }
+                    break;
+                } catch (Exception e) {
+                    BarOrder.switchChannelIp();
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
 
@@ -239,6 +243,8 @@ public class BarMenuActivity extends AppCompatActivity implements AdapterView.On
             data.clear();
             data.addAll(barMenu.getLevel(null));
             simpleAdapter.notifyDataSetChanged();
+            if (getSupportActionBar() != null)
+                getSupportActionBar().setSubtitle(BarOrder.getChannelName());
         }
     }
 
