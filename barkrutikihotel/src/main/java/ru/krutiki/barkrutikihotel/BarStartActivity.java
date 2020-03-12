@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.Menu;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -33,6 +34,13 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+//Чтобы была иконка слева
+//        if (getSupportActionBar() != null) {
+//            //getSupportActionBar().setDisplayShowHomeEnabled(true);
+//            getSupportActionBar().setLogo(R.drawable.ic_tray_meal_svgrepo_com);
+//            getSupportActionBar().setDisplayUseLogoEnabled(true);
+//        }
+//
         setContentView(R.layout.activity_bar_start);
         ListView lvMan = findViewById(R.id.lvMain);
 
