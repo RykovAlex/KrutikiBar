@@ -25,6 +25,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,7 +61,7 @@ public class BarMenuActivity extends AppCompatActivity implements AdapterView.On
         // массив имен атрибутов, из которых будут читаться данные
         String[] from = {TAG_MENU_ID, TAG_MENU_NAME, TAG_MENU_UNIT, TAG_MENU_PRICE, TAG_ORDER_COUNT, TAG_ORDER_COUNT, TAG_MENU_COLOR_BACKGROUND, TAG_MENU_COLOR_TEXT, TAG_MENU_GROUP};
         // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvPrintCount, R.id.llMain,  R.id.tvName, R.id.llName};
+        int[] to = {R.id.tvId, R.id.tvName, R.id.tvUnit, R.id.tvPrice, R.id.llCount, R.id.tvPrintCount, R.id.llMain, R.id.tvName, R.id.llName};
 
         data = new ArrayList<>();
         simpleAdapter = new SimpleAdapter(this, data, R.layout.menu_item, from, to);
@@ -129,8 +131,8 @@ public class BarMenuActivity extends AppCompatActivity implements AdapterView.On
         switch (view.getId()) {
             case R.id.tvName:
                 String colorText = (String) data;
-                if (!colorText.isEmpty() && colorText.charAt(0) == '#'){
-                    ((TextView)view).setTextColor(Color.parseColor(colorText));
+                if (!colorText.isEmpty() && colorText.charAt(0) == '#') {
+                    ((TextView) view).setTextColor(Color.parseColor(colorText));
                     return true;
                 }
                 return false;
@@ -314,6 +316,37 @@ public class BarMenuActivity extends AppCompatActivity implements AdapterView.On
                         }
                         result.add(item);
                     }
+
+                    // Sorting
+                    Collections.sort(result, new Comparator<Map<String, Object>>() {
+                        @Override
+                        public int compare(Map<String, Object> o1, Map<String, Object> o2) {
+                            String s1 = (String) o1.get(TAG_MENU_NAME);
+                            String s2 = (String) o2.get(TAG_MENU_NAME);
+                            int group1 = (int) o1.get(TAG_MENU_GROUP);
+                            int group2 = (int) o2.get(TAG_MENU_GROUP);
+                            if (s1 == null && s2 == null) {
+                                return 0;
+                            }
+                            if (s1 == null) {
+                                return 1;
+                            }
+                            if (s2 == null) {
+                                return -1;
+                            }
+                            if (group1 == 0 && group2 == 0) {
+                                return s1.compareTo(s2);
+                            }
+                            if (group1 == 0 && group2 > 0) {
+                                return 1;
+                            }
+                            if (group1 > 0 && group2 == 0) {
+                                return -1;
+                            }
+                            return s1.compareTo(s2);
+                        }
+                    });
+
                 }
             } else {
                 try {
