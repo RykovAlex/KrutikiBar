@@ -96,7 +96,7 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
             for (int i = 0; i < 2; ++i) {
                 try {
                     Class.forName("com.mysql.jdbc.Driver");
-                    DriverManager.setLoginTimeout(5);
+                    DriverManager.setLoginTimeout(15);
                     Connection con = DriverManager.getConnection(BarOrder.getChannelIp(), getString(R.string.user_name), getString(R.string.user_password));
 
                     Statement st = con.createStatement();

@@ -119,7 +119,7 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
                 break;
             case R.id.ibDown:
                 String index = getIndex(v);
-                barOrder.remove(index);
+                barOrder.sub(index);
                 refreshList();
                 break;
             case R.id.ibUp:
@@ -144,11 +144,12 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
         switch (view.getId()) {
             case R.id.llCount:
                 double count = (double) data;
-                if (count > 0) {
-                    view.setVisibility(View.VISIBLE);
-                } else {
-                    view.setVisibility(View.GONE);
-                }
+//                if (count > 0) {
+//                    view.setVisibility(View.VISIBLE);
+//                } else {
+//                    view.setVisibility(View.GONE);
+//                }
+                view.setVisibility(View.VISIBLE);
                 return true;
             case R.id.llName:
 //                int isGroup = (int) data;
@@ -193,7 +194,7 @@ public class BarOrderActivity extends AppCompatActivity implements View.OnClickL
                     st.executeUpdate("insert into orders (id, orders.order) values ('" + id + "','" + order + "')");
                 }
 
-                for (int i = 0; i < 10; ++i) {
+                for (int i = 0; i < 20; ++i) {
                     rs = st.executeQuery("select * from order_list order by id desc limit 1");
                     if (rs.next()) {
                         if (!lastTimestamp.equals(rs.getString(1))) {

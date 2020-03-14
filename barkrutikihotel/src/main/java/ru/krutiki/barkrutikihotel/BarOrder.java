@@ -44,7 +44,8 @@ public class BarOrder {
     private boolean toKitchen;
     private double amount;
 
-    private static final String[] channelIpList = {"jdbc:mysql://192.168.0.1:3306/bar", "jdbc:mysql://178.46.165.64:3306/bar"};
+    //private static final String[] channelIpList = {"jdbc:mysql://192.168.0.1:3306/bar", "jdbc:mysql://178.46.165.64:3306/bar"};
+    private static final String[] channelIpList = {"jdbc:mysql://178.46.165.64:3306/bar", "jdbc:mysql://178.46.165.64:3306/bar"};
     private static final String[] channelIpTestList = {"jdbc:mysql://192.168.0.1:3306/bartest", "jdbc:mysql://178.46.165.64:3306/bartest"};
     private static String channelIp = null;
 
@@ -66,11 +67,12 @@ public class BarOrder {
         final String s1 = "Внутренний канал связи";
         final String s2 =". Отладочный режим";
         if (BuildConfig.BUILD_TYPE.equals("release")) {
-            if (channelIp.equals(channelIpList[0])) {
-                return s1;
-            } else {
-                return s;
-            }
+//            if (channelIp.equals(channelIpList[0])) {
+//                return s1;
+//            } else {
+//                return s;
+//            }
+            return s;
         } else {
             if (channelIp.equals(channelIpTestList[0])) {
                 return s1 + s2;
@@ -155,6 +157,13 @@ public class BarOrder {
             if (items.get(index).getTotalCount() == 0) {
                 items.remove(index);
             }
+        }
+    }
+
+    void sub(String _id) {
+        int index = getIndex(_id);
+        if (index >= 0) {
+            items.get(index).dec();
         }
     }
 
