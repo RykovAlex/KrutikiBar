@@ -1,5 +1,8 @@
 package ru.krutiki.barkrutikihotel;
 
+import android.net.wifi.WifiManager;
+import android.text.format.Formatter;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -9,9 +12,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import static android.content.Context.WIFI_SERVICE;
 
 public class BarOrder {
 
@@ -44,13 +50,32 @@ public class BarOrder {
     private boolean toKitchen;
     private double amount;
 
-    //private static final String[] channelIpList = {"jdbc:mysql://192.168.0.1:3306/bar", "jdbc:mysql://178.46.165.64:3306/bar"};
-    private static final String[] channelIpList = {"jdbc:mysql://178.46.165.64:3306/bar", "jdbc:mysql://178.46.165.64:3306/bar"};
+    private static final String[] channelIpList = {"jdbc:mysql://192.168.0.1:3306/bar", "jdbc:mysql://178.46.165.64:3306/bar"};
+    //private static final String[] channelIpList = {"jdbc:mysql://178.46.165.64:3306/bar", "jdbc:mysql://178.46.165.64:3306/bar"};
     private static final String[] channelIpTestList = {"jdbc:mysql://192.168.0.1:3306/bartest", "jdbc:mysql://178.46.165.64:3306/bartest"};
     private static String channelIp = null;
+    private static String deviceIp = null;
 
     @SuppressWarnings("ConstantConditions")
     static String getChannelIp() {
+        if (deviceIp != null){
+            String[] ips = deviceIp.split("\\.");
+            if (ips.length == 4) {
+                if (BuildConfig.BUILD_TYPE.equals("release")) {
+                    if (ips[0].equals("192") && ips[1].equals("168") && ips[2].equals("0")) {
+                        channelIp = channelIpList[0];
+                    } else {
+                        channelIp = channelIpList[1];
+                    }
+                } else {
+                    if (ips[0].equals("192") && ips[1].equals("168") && ips[2].equals("0")) {
+                        channelIp = channelIpTestList[0];
+                    } else {
+                        channelIp = channelIpTestList[1];
+                    }
+                }
+            }
+        }
         if (channelIp == null) {
             if (BuildConfig.BUILD_TYPE.equals("release")) {
                 channelIp = channelIpList[0];
@@ -66,18 +91,20 @@ public class BarOrder {
         final String s = "Внешний канал связи";
         final String s1 = "Внутренний канал связи";
         final String s2 =". Отладочный режим";
+        final String sip =". IP планшета " + deviceIp;
+        String cip = getChannelIp();
+
         if (BuildConfig.BUILD_TYPE.equals("release")) {
-//            if (channelIp.equals(channelIpList[0])) {
-//                return s1;
-//            } else {
-//                return s;
-//            }
-            return s;
-        } else {
-            if (channelIp.equals(channelIpTestList[0])) {
-                return s1 + s2;
+            if (cip.equals(channelIpList[0])) {
+                return s1+ sip;
             } else {
-                return s + s2;
+                return s+ sip;
+            }
+        } else {
+            if (cip.equals(channelIpTestList[0])) {
+                return s1 + sip + s2;
+            } else {
+                return s + sip + s2;
             }
         }
     }
@@ -112,6 +139,10 @@ public class BarOrder {
         super();
         parse(jsonObject);
         number = _number;
+    }
+
+    static void setDeviceIp(String deviceIp) {
+        BarOrder.deviceIp = deviceIp;
     }
 
     private void parse(JSONObject jsonObject) {

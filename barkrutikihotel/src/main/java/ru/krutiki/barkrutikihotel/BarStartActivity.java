@@ -2,8 +2,10 @@ package ru.krutiki.barkrutikihotel;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.format.Formatter;
 import android.view.Menu;
 import android.view.View;
 import android.widget.AdapterView;
@@ -55,6 +57,10 @@ public class BarStartActivity extends AppCompatActivity implements View.OnClickL
 
         lvMan.setAdapter(simpleAdapter);
         lvMan.setOnItemClickListener(this);
+
+        WifiManager wm = (WifiManager)getApplicationContext().getSystemService(WIFI_SERVICE);
+        String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+        BarOrder.setDeviceIp(ip);
 
         refresh();
     }
